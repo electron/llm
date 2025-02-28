@@ -21,6 +21,8 @@
   },
   "scripts": {
     "tsc": "tsc",
+    "lint:check": "prettier --check \"**/*.{ts,js}\"",
+    "lint:fix": "prettier --write \"**/*.{ts,js}\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Electron Community",
@@ -44,6 +46,8 @@
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
+    "eslint": "^8.57.1",
+    "prettier": "^3.5.2",
     "typescript": "^5.7.3"
   }
 }
