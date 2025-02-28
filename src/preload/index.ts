@@ -1,7 +1,28 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { ElectronLlmRenderer, RendererLoadFunction } from '../interfaces';
+import {
+  ChatHistoryItem,
+  ElectronLlmRenderer,
+  RendererLoadFunction,
+} from '../interfaces';
+import { IpcRendererMessage } from '../common/ipc-channel-names';
 
-const electronLlm: ElectronLlmRenderer = {};
+const electronLlm: ElectronLlmRenderer = {
+  // TODO: type options
+  startAiModelProcess: async (options: any): Promise<void> =>
+    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_START_PROCESS),
+  stopAiModelProcess: async (): Promise<void> =>
+    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_STOP_PROCESS),
+  sendAiModelPrompt: async (prompt: string): Promise<string> =>
+    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_PROMPT, prompt),
+  getAiConversationHistory: async (): Promise<Array<ChatHistoryItem>> =>
+    ipcRenderer.invoke(
+      IpcRendererMessage.ELECTRON_LLM_GET_CONVERSATION_HISTORY,
+    ),
+  resetAiConversationHistory: async (): Promise<void> =>
+    ipcRenderer.invoke(
+      IpcRendererMessage.ELECTRON_LLM_RESET_CONVERSATION_HISTORY,
+    ),
+};
 
 export const load: RendererLoadFunction = async () => {
   contextBridge.exposeInMainWorld('electronLlm', electronLlm);

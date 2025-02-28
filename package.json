@@ -49,8 +49,9 @@
     "type": "git",
     "url": "git+https://github.com/electron/llm.git"
   },
-  "peerDependencies": {
-    "electron": ">= 30.0.0"
+  "dependencies": {
+    "electron": "^34.0.0",
+    "node-llama-cpp": "^3.5.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
