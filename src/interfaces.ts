@@ -8,7 +8,14 @@ export interface ElectronLlmShared {}
 
 // Renderer interfaces
 export interface ElectronLlmRenderer {
-  // TODO: type options
+  /* TODO
+   * type options
+   * save chat history?
+   * load chat history?
+   * set temperature?
+   * set max tokens?
+   *
+   */
   startAiModelProcess: (options: any) => Promise<void>;
   stopAiModelProcess: () => Promise<void>;
   sendAiModelPrompt: (prompt: string) => Promise<string>;
