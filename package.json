@@ -20,6 +20,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
+    "tsc": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Electron Community",
