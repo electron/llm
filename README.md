@@ -17,6 +17,6 @@ npm run test:watch
 npm run test:coverage
 ```
 
-For more details, see [__tests__/README.md](__tests__/README.md).
+For more details, see [\_\_tests\_\_/README.md](\_\_tests\_\_/README.md).
 
 
