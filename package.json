@@ -23,7 +23,9 @@
     "tsc": "tsc",
     "lint:check": "prettier --check \"**/*.{ts,js}\"",
     "lint:fix": "prettier --write \"**/*.{ts,js}\"",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "prepare": "husky install"
   },
   "lint-staged": {
@@ -52,10 +54,12 @@
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
+    "@vitest/coverage-v8": "^3.0.7",
     "eslint": "^8.57.1",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.3",
     "prettier": "^3.5.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.7"
   }
 }

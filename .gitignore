@@ -21,6 +21,7 @@ node_modules/
 SHASUMS256.txt
 compile_commands.json
 .envrc
+coverage
 
 .npmrc
 
