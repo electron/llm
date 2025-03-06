@@ -16,7 +16,8 @@ async function loadModel(modelPath: string) {
       data: 'Model loaded successfully.',
     });
   } catch (error) {
-    process.parentPort.postMessage({ type: 'error', data: error.message });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    process.parentPort.postMessage({ type: 'error', data: errorMessage });
   }
 }
 

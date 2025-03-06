@@ -5,7 +5,7 @@ import {
   utilityProcess,
   UtilityProcess,
 } from 'electron';
-import { IpcRendererMessage } from '../common/ipc-channel-names';
+import { IpcRendererMessage } from '../common/ipc-channel-names.js';
 import { once } from 'node:events';
 import path from 'node:path';
 

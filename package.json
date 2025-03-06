@@ -36,6 +36,7 @@
       "prettier --write"
     ]
   },
+  "type" : "module",
   "author": "Electron Community",
   "keywords": [
     "electron",

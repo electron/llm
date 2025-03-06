@@ -1,22 +1,49 @@
-import { getProcessType } from './helpers/get-process-type';
-import { MainLoadFunction, RendererLoadFunction } from './interfaces';
+import { MainLoadFunction } from './interfaces.js';
+import { registerAiHandlers } from './main/register-ai-handlers.js';
+import path from 'path';
+import { app, BrowserWindow } from 'electron';
 
-export * from './interfaces';
-export * from './constants';
+let win;
+function createWindow() {
+  win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      preload: path.join(__dirname, '..', 'preload', 'index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  win.loadFile(path.join(__dirname, '..', 'index.html'));
 
-export async function load() {
-  const processType = await getProcessType();
-  let loadFunction: MainLoadFunction | RendererLoadFunction;
+  // Log the path to be absolutely sure
+  const indexPath = path.join(__dirname, '..', 'index.html');
+  console.log('Loading index file from:', indexPath);
 
-  if (processType === 'main') {
-    loadFunction = (await import('./main/index.js')).load;
-  } else if (processType === 'renderer') {
-    loadFunction = (await import('./renderer/index.js')).load;
-  } else if (processType === 'preload') {
-    loadFunction = (await import('./preload/index.js')).load;
-  } else {
-    throw new Error(`Unsupported process type: ${processType}`);
-  }
+  win.loadFile(indexPath).catch((err) => {
+    console.error('Failed to load index.html:', err);
+  });
 
-  await loadFunction();
+  win.webContents.openDevTools();
 }
+
+export const load: MainLoadFunction = async () => {
+  registerAiHandlers();
+  await app.whenReady();
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+};
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+// Re-export any main process-specific types or interfaces
+export * from './interfaces.js';

@@ -3,8 +3,8 @@ import {
   ChatHistoryItem,
   ElectronLlmRenderer,
   RendererLoadFunction,
-} from '../interfaces';
-import { IpcRendererMessage } from '../common/ipc-channel-names';
+} from '../interfaces.js';
+import { IpcRendererMessage } from '../common/ipc-channel-names.js';
 
 const electronLlm: ElectronLlmRenderer = {
   // TODO: type options
@@ -29,4 +29,4 @@ export const load: RendererLoadFunction = async () => {
 };
 
 // Export for programmatic usage
-export * from '../interfaces';
+export * from '../interfaces.js';
