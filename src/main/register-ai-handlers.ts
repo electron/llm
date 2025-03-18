@@ -8,21 +8,21 @@ import {
 import { IpcRendererMessage } from '../common/ipc-channel-names.js';
 import { once } from 'node:events';
 import path from 'node:path';
+import {
+  LanguageModelCreateOptions,
+  LanguageModelPromptOptions,
+} from '../language-model.js';
 
-let modelPath: string | null = null;
 let aiProcess: UtilityProcess | null = null;
 
 export function registerAiHandlers() {
-  ipcMain.handle(
-    IpcRendererMessage.ELECTRON_LLM_START_PROCESS,
-    async (event, options) => {
-      console.log('Received start process request', options);
-    },
-  );
+  ipcMain.handle(IpcRendererMessage.ELECTRON_LLM_DESTROY, async (event) => {
+    stopModel();
+  });
 
   ipcMain.handle(
-    IpcRendererMessage.ELECTRON_LLM_STOP_PROCESS,
-    async (event) => {
+    IpcRendererMessage.ELECTRON_LLM_CREATE,
+    async (event, options?: LanguageModelCreateOptions) => {
       try {
         stopModel();
       } catch (error) {
@@ -47,7 +47,10 @@ export function registerAiHandlers() {
         );
       }
 
-      modelPath = result.filePaths[0];
+      let createOptions = options ?? {
+        modelPath: result.filePaths[0],
+      };
+
       aiProcess = await startAiModel();
       if (!aiProcess) {
         throw new Error(
@@ -55,7 +58,7 @@ export function registerAiHandlers() {
         );
       }
       const messagePromise = once(aiProcess, 'message');
-      aiProcess.postMessage({ type: 'loadModel', data: { modelPath } });
+      aiProcess.postMessage({ type: 'loadModel', data: createOptions });
 
       const timeoutPromise = new Promise<any>((_, reject) => {
         setTimeout(
@@ -80,24 +83,76 @@ export function registerAiHandlers() {
 
   ipcMain.handle(
     IpcRendererMessage.ELECTRON_LLM_PROMPT,
-    async (event, prompt) => {
-      console.log('Received prompt request', prompt);
-      return 'Response to prompt';
+    async (event, input: string, options: LanguageModelPromptOptions) => {
+      if (!aiProcess) {
+        throw new Error('AI model process not started.');
+      }
+      aiProcess.postMessage({
+        type: 'sendPrompt',
+        data: { input, stream: false, options },
+      });
+
+      const responsePromise = once(aiProcess, 'message').then(([msg]) => {
+        const { type, data } = msg;
+        if (type === 'done') {
+          return data;
+        } else if (type === 'error') {
+          throw new Error(data);
+        } else {
+          throw new Error(`Unexpected message type: ${type}`);
+        }
+      });
+
+      // Set a timeout (e.g., 20 seconds) in case the child process doesn't reply.
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(
+          () => reject(new Error('Prompt response timed out.')),
+          20000,
+        );
+      });
+
+      return await Promise.race([responsePromise, timeoutPromise]);
     },
   );
 
   ipcMain.handle(
-    IpcRendererMessage.ELECTRON_LLM_GET_CONVERSATION_HISTORY,
-    async (event) => {
-      console.log('Received get conversation history request');
-      return [];
-    },
-  );
+    IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING,
+    async (event, input, options) => {
+      if (!aiProcess) {
+        throw new Error('AI model process not started.');
+      }
+      aiProcess.postMessage({
+        type: 'sendPrompt',
+        data: { input, stream: true, options },
+      });
 
-  ipcMain.handle(
-    IpcRendererMessage.ELECTRON_LLM_RESET_CONVERSATION_HISTORY,
-    async (event) => {
-      console.log('Received reset conversation history request');
+      const streamPromise = new Promise<string[]>((resolve, reject) => {
+        const chunks: string[] = [];
+
+        const handler = ([msg]: any[]) => {
+          const { type, data } = msg;
+          if (type === 'stream') {
+            processChunk(data);
+            chunks.push(data);
+          } else if (type === 'done') {
+            aiProcess?.removeListener('message', handler);
+            resolve(chunks);
+          } else if (type === 'error') {
+            aiProcess?.removeListener('message', handler);
+            reject(new Error(data));
+          }
+        };
+
+        aiProcess?.on('message', handler);
+
+        // Give the AI model process 30 seconds to stream the response.
+        setTimeout(() => {
+          aiProcess?.removeListener('message', handler);
+          reject(new Error('Prompt streaming timed out.'));
+        }, 30000);
+      });
+
+      return await streamPromise;
     },
   );
 }
@@ -133,7 +188,10 @@ export async function startAiModel(): Promise<UtilityProcess> {
 function stopModel() {
   if (aiProcess) {
     aiProcess.postMessage({ type: 'stop' });
-    aiProcess.kill();
     aiProcess = null;
   }
+}
+
+function processChunk(data: any) {
+  console.log(`Received chunk: ${data}`);
 }

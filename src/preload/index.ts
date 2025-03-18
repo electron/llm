@@ -1,27 +1,26 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import {
-  ChatHistoryItem,
-  ElectronLlmRenderer,
-  RendererLoadFunction,
-} from '../interfaces.js';
+import { ElectronLlmRenderer, RendererLoadFunction } from '../interfaces.js';
 import { IpcRendererMessage } from '../common/ipc-channel-names.js';
+import {
+  LanguageModelCreateOptions,
+  LanguageModelPromptOptions,
+} from '../language-model.js';
 
 const electronLlm: ElectronLlmRenderer = {
-  // TODO: type options
-  startAiModelProcess: async (options: any): Promise<void> =>
-    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_START_PROCESS),
-  stopAiModelProcess: async (): Promise<void> =>
-    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_STOP_PROCESS),
-  sendAiModelPrompt: async (prompt: string): Promise<string> =>
-    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_PROMPT, prompt),
-  getAiConversationHistory: async (): Promise<Array<ChatHistoryItem>> =>
-    ipcRenderer.invoke(
-      IpcRendererMessage.ELECTRON_LLM_GET_CONVERSATION_HISTORY,
-    ),
-  resetAiConversationHistory: async (): Promise<void> =>
-    ipcRenderer.invoke(
-      IpcRendererMessage.ELECTRON_LLM_RESET_CONVERSATION_HISTORY,
-    ),
+  create: async (options?: LanguageModelCreateOptions): Promise<void> =>
+    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_CREATE, options),
+  destroy: async (): Promise<void> =>
+    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_DESTROY),
+  prompt: async (
+    input: string,
+    options?: LanguageModelPromptOptions,
+  ): Promise<string> =>
+    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_PROMPT, input, options),
+  promptStreaming: async (
+    input: string,
+    options?: LanguageModelPromptOptions,
+  ): Promise<string> =>
+    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING, input),
 };
 
 export const load: RendererLoadFunction = async () => {

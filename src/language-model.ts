@@ -1,12 +1,12 @@
 import { getLlama, LlamaModel, LlamaChatSession } from 'node-llama-cpp';
 
-enum LanguageModelPromptRole {
+export enum LanguageModelPromptRole {
   SYSTEM = 'system',
   USER = 'user',
   ASSISTANT = 'assistant',
 }
 
-enum LanguageModelPromptType {
+export enum LanguageModelPromptType {
   TEXT = 'text',
   IMAGE = 'image',
   AUDIO = 'audio',
@@ -20,7 +20,7 @@ interface LanguageModelPrompt {
   content: LanguageModelPromptContent;
 }
 
-interface LanguageModelCreateOptions {
+export interface LanguageModelCreateOptions {
   systemPrompt?: string;
   initialPrompts?: LanguageModelPrompt[];
   topK?: number;
@@ -29,7 +29,7 @@ interface LanguageModelCreateOptions {
   modelPath: string;
 }
 
-interface LanguageModelPromptOptions {
+export interface LanguageModelPromptOptions {
   responseJSONSchema?: object;
   signal?: AbortSignal;
 }
@@ -93,10 +93,6 @@ export class LanguageModel {
       });
       return new LanguageModel(options, model, context, session);
     } catch (error) {
-      process.parentPort?.postMessage({
-        type: 'error',
-        data: error instanceof Error ? error.message : String(error),
-      });
       throw error;
     }
   }
@@ -246,6 +242,5 @@ export class LanguageModel {
       type: 'stopped',
       data: 'Model session destroyed.',
     });
-    process.parentPort.emit('exit');
   }
 }

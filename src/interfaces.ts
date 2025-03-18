@@ -1,26 +1,23 @@
-export interface ChatHistoryItem {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+import {
+  LanguageModelCreateOptions,
+  LanguageModelPromptOptions,
+} from './language-model.js';
 
 // Shared interfaces
 export interface ElectronLlmShared {}
 
 // Renderer interfaces
 export interface ElectronLlmRenderer {
-  /* TODO
-   * type options
-   * save chat history?
-   * load chat history?
-   * set temperature?
-   * set max tokens?
-   *
-   */
-  startAiModelProcess: (options: any) => Promise<void>;
-  stopAiModelProcess: () => Promise<void>;
-  sendAiModelPrompt: (prompt: string) => Promise<string>;
-  getAiConversationHistory: () => Promise<Array<ChatHistoryItem>>;
-  resetAiConversationHistory: () => Promise<void>;
+  create: (options: LanguageModelCreateOptions) => Promise<void>;
+  destroy: () => Promise<void>;
+  prompt: (
+    input: string,
+    options?: LanguageModelPromptOptions,
+  ) => Promise<string>;
+  promptStreaming: (
+    input: string,
+    options?: LanguageModelPromptOptions,
+  ) => Promise<string>;
 }
 
 // Main interfaces

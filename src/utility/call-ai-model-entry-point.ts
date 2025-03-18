@@ -1,57 +1,72 @@
-import { getLlama, LlamaChatSession } from 'node-llama-cpp';
+import {
+  LanguageModel,
+  LanguageModelPromptRole,
+  LanguageModelPromptType,
+  LanguageModelPromptOptions,
+  LanguageModelCreateOptions,
+} from '../language-model.js';
 
-let model = null;
-let context = null;
-let session: LlamaChatSession | null = null;
+let languageModel: LanguageModel;
 
-async function loadModel(modelPath: string) {
+async function loadModel(options: LanguageModelCreateOptions) {
   try {
-    const llama = await getLlama();
-    model = await llama.loadModel({ modelPath });
-    context = await model.createContext();
-    session = new LlamaChatSession({ contextSequence: context.getSequence() });
-
-    process.parentPort.postMessage({
-      type: 'modelLoaded',
-      data: 'Model loaded successfully.',
-    });
+    languageModel = await LanguageModel.create(options);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    process.parentPort.postMessage({ type: 'error', data: errorMessage });
+    process.parentPort?.postMessage({
+      type: 'error',
+      data: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
-async function generateResponse(prompt: string) {
-  if (!session) {
-    process.parentPort.postMessage({
+async function generateResponse(
+  prompt: string,
+  stream: boolean,
+  options?: LanguageModelPromptOptions,
+) {
+  if (!languageModel) {
+    process.parentPort?.postMessage({
       type: 'error',
-      data: 'Model not loaded.',
+      data: 'Language model not loaded.',
     });
     return;
   }
-  let response = await session.prompt(prompt, {
-    onTextChunk(chunk: string) {
-      process.parentPort.postMessage({ type: 'stream', data: chunk });
-    },
-  });
-  process.parentPort.postMessage({ type: 'done', data: response });
-}
 
-function getChatHistory() {
-  if (session) {
-    return session.getChatHistory();
-  }
-  return [];
-}
+  // TODO: support user and text types only for now
+  const promptPayload = {
+    role: LanguageModelPromptRole.USER,
+    type: LanguageModelPromptType.TEXT,
+    content: prompt,
+  };
 
-function resetChatHistory() {
-  if (session) {
-    session.setChatHistory([]);
+  try {
+    if (stream) {
+      // Use the streaming API and send each chunk via parentPort
+      const readable = languageModel.promptStreaming(promptPayload, options);
+      const reader = readable.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        process.parentPort?.postMessage({ type: 'stream', data: value });
+      }
+      process.parentPort?.postMessage({ type: 'done' });
+    } else {
+      // Otherwise await the full response and post it
+      const value = await languageModel.prompt(promptPayload, options);
+      process.parentPort?.postMessage({ type: 'done', data: value });
+    }
+  } catch (error) {
+    process.parentPort?.postMessage({
+      type: 'error',
+      data: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
 function stopModel() {
-  if (session) session.setChatHistory([]);
+  if (languageModel) {
+    languageModel.destroy();
+  }
   process.parentPort.postMessage({
     type: 'stopped',
     data: 'Model session reset.',
@@ -63,22 +78,14 @@ process.parentPort.on('message', async (msg) => {
   const { data } = msg;
 
   if (data.type === 'loadModel') {
-    await loadModel(data.data.modelPath);
+    await loadModel(data.data);
   } else if (data.type === 'sendPrompt') {
-    process.parentPort.postMessage({ type: 'promptReceived', data: data.data });
-    await generateResponse(data.data);
+    await generateResponse(
+      data.data.input,
+      data.data.stream,
+      data.data.options,
+    );
   } else if (data.type === 'stop') {
     stopModel();
-  } else if (data.type === 'getChatHistory') {
-    process.parentPort.postMessage({
-      type: 'chatHistory',
-      data: getChatHistory(),
-    });
-  } else if (data.type === 'resetChatHistory') {
-    resetChatHistory();
-    process.parentPort.postMessage({
-      type: 'chatHistoryReset',
-      data: 'Chat history reset.',
-    });
   }
 });
