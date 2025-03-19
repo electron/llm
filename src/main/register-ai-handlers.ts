@@ -30,27 +30,6 @@ export function registerAiHandlers() {
         throw error;
       }
 
-      const focusedWindow = BrowserWindow.getFocusedWindow();
-      if (!focusedWindow) {
-        throw new Error('startAiModelProcess: No focused window.');
-      }
-
-      const result = await dialog.showOpenDialog(focusedWindow, {
-        properties: ['openFile'],
-        filters: [{ name: 'GGUF models', extensions: ['gguf'] }],
-        title: 'Select a GGUF model',
-      });
-
-      if (result.canceled || result.filePaths.length === 0) {
-        throw new Error(
-          'startAiModelProcess: error selecting path to GGUF model.',
-        );
-      }
-
-      let createOptions = options ?? {
-        modelPath: result.filePaths[0],
-      };
-
       aiProcess = await startAiModel();
       if (!aiProcess) {
         throw new Error(
@@ -58,7 +37,7 @@ export function registerAiHandlers() {
         );
       }
       const messagePromise = once(aiProcess, 'message');
-      aiProcess.postMessage({ type: 'loadModel', data: createOptions });
+      aiProcess.postMessage({ type: 'loadModel', data: options });
 
       const timeoutPromise = new Promise<any>((_, reject) => {
         setTimeout(
