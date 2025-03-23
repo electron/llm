@@ -1,8 +1,8 @@
-import { getProcessType } from './helpers/get-process-type';
-import { MainLoadFunction, RendererLoadFunction } from './interfaces';
+import { getProcessType } from './helpers/get-process-type.js';
+import { MainLoadFunction, RendererLoadFunction } from './interfaces.js';
 
-export * from './interfaces';
-export * from './constants';
+export * from './interfaces.js';
+export * from './constants.js';
 
 export async function load() {
   const processType = await getProcessType();

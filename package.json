@@ -33,6 +33,7 @@
       "prettier --write"
     ]
   },
+  "type": "module",
   "author": "Electron Community",
   "keywords": [
     "electron",
@@ -49,8 +50,9 @@
     "type": "git",
     "url": "git+https://github.com/electron/llm.git"
   },
-  "peerDependencies": {
-    "electron": ">= 30.0.0"
+  "dependencies": {
+    "electron": "^35.0.2",
+    "node-llama-cpp": "^3.5.0"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",

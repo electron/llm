@@ -33,3 +33,5 @@ spec/.hash
 
 # If someone runs tsc this is where stuff will end up
 ts-gen
+
+out/

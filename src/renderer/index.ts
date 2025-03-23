@@ -1,6 +1,6 @@
-import { RendererLoadFunction } from '../interfaces';
+import { RendererLoadFunction } from '../interfaces.js';
 
 export const load: RendererLoadFunction = async () => {};
 
 // Re-export any types or interfaces specific to the renderer process
-export * from '../interfaces';
+export * from '../interfaces.js';
