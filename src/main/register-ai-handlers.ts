@@ -1,4 +1,9 @@
-import { ipcMain, utilityProcess, UtilityProcess } from 'electron';
+import {
+  ipcMain,
+  utilityProcess,
+  UtilityProcess,
+  MessageChannelMain,
+} from 'electron';
 import { once } from 'node:events';
 import path from 'node:path';
 import { deepEqual } from 'node:assert/strict';
@@ -99,46 +104,76 @@ export function registerAiHandlers() {
     },
   );
 
-  ipcMain.handle(
+  ipcMain.on(
     IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING,
-    async (_event, input, options) => {
+    (event, { input, options }, rendererPort) => {
       if (!aiProcess) {
-        throw new Error('AI model process not started.');
+        rendererPort.postMessage({
+          type: 'error',
+          error: 'AI model process not started.',
+        });
+        return;
       }
 
-      aiProcess.postMessage({
-        type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
-        data: { input, stream: true, options },
+      const { port1: mainPort, port2: utilityPort } = new MessageChannelMain();
+
+      mainPort.on('message', (event) => {
+        rendererPort.postMessage(event.data);
       });
 
-      const streamPromise = new Promise<string[]>((resolve, reject) => {
-        const chunks: string[] = [];
+      aiProcess.postMessage(
+        {
+          type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
+          data: { input, stream: true, options },
+        },
+        [utilityPort],
+      );
+    },
+  );
 
-        const handler = ([msg]: any[]) => {
-          const { type, data } = msg;
+  ipcMain.on(
+    'ELECTRON_LLM_PROMPT_STREAMING_REQUEST',
+    (event, { input, options }) => {
+      if (!aiProcess) {
+        event.sender.send(
+          'ELECTRON_LLM_PROMPT_STREAMING_ERROR',
+          'AI model process not started.',
+        );
+        return;
+      }
 
-          if (type === UTILITY_MESSAGE_TYPES.STREAM) {
-            processChunk(data);
-            chunks.push(data);
-          } else if (type === UTILITY_MESSAGE_TYPES.DONE) {
-            aiProcess?.removeListener('message', handler);
-            resolve(chunks);
-          } else if (type === UTILITY_MESSAGE_TYPES.ERROR) {
-            aiProcess?.removeListener('message', handler);
-            reject(new Error(data));
-          }
-        };
+      // Create two message channels
+      const { port1: rendererPort1, port2: rendererPort2 } =
+        new MessageChannelMain();
+      const { port1: utilityPort1, port2: utilityPort2 } =
+        new MessageChannelMain();
 
-        aiProcess?.on('message', handler);
-
-        // Give the AI model process 30 seconds to stream the response.
-        setTimeout(() => {
-          aiProcess?.removeListener('message', handler);
-          reject(new Error('Prompt streaming timed out.'));
-        }, 30000);
+      // Connect the two ports directly
+      rendererPort1.on('message', (event) => {
+        utilityPort1.postMessage(event.data);
       });
 
-      return await streamPromise;
+      utilityPort1.on('message', (event) => {
+        rendererPort1.postMessage(event.data);
+      });
+
+      // Start both ports
+      rendererPort1.start();
+      utilityPort1.start();
+
+      // Send one port to the renderer
+      event.sender.postMessage('ELECTRON_LLM_PROMPT_STREAMING_PORT', null, [
+        rendererPort2,
+      ]);
+
+      // Send the other port to the utility process
+      aiProcess.postMessage(
+        {
+          type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
+          data: { input, stream: true, options },
+        },
+        [utilityPort2],
+      );
     },
   );
 }

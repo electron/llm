@@ -191,9 +191,14 @@
       userInput.value = '';
 
       try {
-        const response = await window.electronAi.prompt(message);
-        messagesContainer.appendChild(createMessageElement(response, 'model'));
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        const modelMessage = createMessageElement('', 'model');
+        messagesContainer.appendChild(modelMessage);
+
+        const stream = await window.electronAi.promptStreaming(message);
+        for await (const chunk of stream) {
+          modelMessage.textContent = 'Model: ' + (modelMessage.textContent.slice(7) + chunk);
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
       } catch (error) {
         console.error('Error getting response:', error);
         alert(`Error getting response: ${error.message}`);
