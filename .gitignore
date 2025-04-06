@@ -35,3 +35,4 @@ spec/.hash
 ts-gen
 
 out/
+end-to-end/dist

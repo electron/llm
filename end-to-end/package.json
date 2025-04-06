@@ -1,0 +1,6 @@
+{
+  "main": "dist/main/index.js",
+  "dependencies": {
+    "@electron/llm": "file:../dist"
+  }
+}
