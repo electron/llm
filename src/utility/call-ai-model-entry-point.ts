@@ -5,6 +5,7 @@ import {
   LanguageModelPromptOptions,
   LanguageModelCreateOptions,
 } from '../language-model.js';
+import { UTILITY_MESSAGE_TYPES } from './messages.js';
 
 let languageModel: LanguageModel;
 
@@ -13,7 +14,7 @@ async function loadModel(options: LanguageModelCreateOptions) {
     languageModel = await LanguageModel.create(options);
   } catch (error) {
     process.parentPort?.postMessage({
-      type: 'error',
+      type: UTILITY_MESSAGE_TYPES.ERROR,
       data: error instanceof Error ? error.message : String(error),
     });
   }
@@ -26,7 +27,7 @@ async function generateResponse(
 ) {
   if (!languageModel) {
     process.parentPort?.postMessage({
-      type: 'error',
+      type: UTILITY_MESSAGE_TYPES.ERROR,
       data: 'Language model not loaded.',
     });
     return;
@@ -47,17 +48,23 @@ async function generateResponse(
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        process.parentPort?.postMessage({ type: 'stream', data: value });
+        process.parentPort?.postMessage({
+          type: UTILITY_MESSAGE_TYPES.STREAM,
+          data: value,
+        });
       }
-      process.parentPort?.postMessage({ type: 'done' });
+      process.parentPort?.postMessage({ type: UTILITY_MESSAGE_TYPES.DONE });
     } else {
       // Otherwise await the full response and post it
       const value = await languageModel.prompt(promptPayload, options);
-      process.parentPort?.postMessage({ type: 'done', data: value });
+      process.parentPort?.postMessage({
+        type: UTILITY_MESSAGE_TYPES.DONE,
+        data: value,
+      });
     }
   } catch (error) {
     process.parentPort?.postMessage({
-      type: 'error',
+      type: UTILITY_MESSAGE_TYPES.ERROR,
       data: error instanceof Error ? error.message : String(error),
     });
   }
@@ -67,25 +74,27 @@ function stopModel() {
   if (languageModel) {
     languageModel.destroy();
   }
+
   process.parentPort.postMessage({
-    type: 'stopped',
+    type: UTILITY_MESSAGE_TYPES.STOPPED,
     data: 'Model session reset.',
   });
+
   process.parentPort.emit('exit');
 }
 
 process.parentPort.on('message', async (msg) => {
   const { data } = msg;
 
-  if (data.type === 'loadModel') {
+  if (data.type === UTILITY_MESSAGE_TYPES.LOAD_MODEL) {
     await loadModel(data.data);
-  } else if (data.type === 'sendPrompt') {
+  } else if (data.type === UTILITY_MESSAGE_TYPES.SEND_PROMPT) {
     await generateResponse(
       data.data.input,
       data.data.stream,
       data.data.options,
     );
-  } else if (data.type === 'stop') {
+  } else if (data.type === UTILITY_MESSAGE_TYPES.STOP) {
     stopModel();
   }
 });
