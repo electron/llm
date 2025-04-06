@@ -7,13 +7,12 @@ import {
   LanguageModelCreateOptions,
   LanguageModelPromptOptions,
 } from '../language-model.js';
+import { UTILITY_MESSAGE_TYPES } from '../utility/messages.js';
 
 let aiProcess: UtilityProcess | null = null;
 
 export function registerAiHandlers() {
-  ipcMain.handle(IpcRendererMessage.ELECTRON_LLM_DESTROY, async (event) => {
-    stopModel();
-  });
+  ipcMain.handle(IpcRendererMessage.ELECTRON_LLM_DESTROY, () => stopModel());
 
   ipcMain.handle(
     IpcRendererMessage.ELECTRON_LLM_CREATE,
@@ -33,7 +32,10 @@ export function registerAiHandlers() {
         );
       }
       const messagePromise = once(aiProcess, 'message');
-      aiProcess.postMessage({ type: 'loadModel', data: options });
+      aiProcess.postMessage({
+        type: UTILITY_MESSAGE_TYPES.LOAD_MODEL,
+        data: options,
+      });
 
       const timeoutPromise = new Promise<any>((_, reject) => {
         setTimeout(
@@ -42,13 +44,13 @@ export function registerAiHandlers() {
         );
       });
 
-      // give the AI model process 20 seconds to load the model
+      // Give the AI model process 20 seconds to load the model
       const [data] = await Promise.race([messagePromise, timeoutPromise]);
-
       const { type, data: responseData } = data;
-      if (type === 'modelLoaded') {
+
+      if (type === UTILITY_MESSAGE_TYPES.MODEL_LOADED) {
         return;
-      } else if (type === 'error') {
+      } else if (type === UTILITY_MESSAGE_TYPES.ERROR) {
         throw new Error(responseData);
       } else {
         throw new Error(`Unexpected message type: ${type}`);
@@ -63,15 +65,15 @@ export function registerAiHandlers() {
         throw new Error('AI model process not started.');
       }
       aiProcess.postMessage({
-        type: 'sendPrompt',
+        type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
         data: { input, stream: false, options },
       });
 
       const responsePromise = once(aiProcess, 'message').then(([msg]) => {
         const { type, data } = msg;
-        if (type === 'done') {
+        if (type === UTILITY_MESSAGE_TYPES.DONE) {
           return data;
-        } else if (type === 'error') {
+        } else if (type === UTILITY_MESSAGE_TYPES.ERROR) {
           throw new Error(data);
         } else {
           throw new Error(`Unexpected message type: ${type}`);
@@ -92,12 +94,13 @@ export function registerAiHandlers() {
 
   ipcMain.handle(
     IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING,
-    async (event, input, options) => {
+    async (_event, input, options) => {
       if (!aiProcess) {
         throw new Error('AI model process not started.');
       }
+
       aiProcess.postMessage({
-        type: 'sendPrompt',
+        type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
         data: { input, stream: true, options },
       });
 
@@ -106,13 +109,13 @@ export function registerAiHandlers() {
 
         const handler = ([msg]: any[]) => {
           const { type, data } = msg;
-          if (type === 'stream') {
+          if (type === UTILITY_MESSAGE_TYPES.STREAM) {
             processChunk(data);
             chunks.push(data);
-          } else if (type === 'done') {
+          } else if (type === UTILITY_MESSAGE_TYPES.DONE) {
             aiProcess?.removeListener('message', handler);
             resolve(chunks);
-          } else if (type === 'error') {
+          } else if (type === UTILITY_MESSAGE_TYPES.ERROR) {
             aiProcess?.removeListener('message', handler);
             reject(new Error(data));
           }
@@ -135,8 +138,10 @@ export function registerAiHandlers() {
 export async function startAiModel(): Promise<UtilityProcess> {
   const utilityScriptPath = path.join(
     __dirname,
-    'call-ai-model-entry-point.bundle.js',
+    '../utility/call-ai-model-entry-point.js',
   );
+
+  console.log(`Starting AI model from ${utilityScriptPath}`);
 
   const aiProcess = utilityProcess.fork(utilityScriptPath, [], {
     stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
@@ -154,15 +159,32 @@ export async function startAiModel(): Promise<UtilityProcess> {
   }
 
   aiProcess.on('exit', () => {
-    aiProcess.kill();
+    console.info('AI model child process exited.');
   });
 
   return aiProcess;
 }
 
-function stopModel() {
+/**
+ * Stops the AI model process. If the process doesn't exit after 3 seconds, it will be killed.
+ */
+async function stopModel(): Promise<void> {
   if (aiProcess) {
-    aiProcess.postMessage({ type: 'stop' });
+    const exitPromise = once(aiProcess, 'exit');
+    aiProcess.postMessage({ type: UTILITY_MESSAGE_TYPES.STOP });
+
+    // If the process doesn't exit after 3 seconds, kill it
+    try {
+      await Promise.race([
+        exitPromise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Process exit timeout')), 3000),
+        ),
+      ]);
+    } catch (error) {
+      aiProcess.kill();
+    }
+
     aiProcess = null;
   }
 }

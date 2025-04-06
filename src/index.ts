@@ -1,22 +1,26 @@
 import { getProcessType } from './helpers/get-process-type.js';
-import { MainLoadFunction, RendererLoadFunction } from './interfaces.js';
+import {
+  MainLoadFunction,
+  LoadOptions,
+  RendererLoadFunction,
+} from './interfaces.js';
 
 export * from './interfaces.js';
 export * from './constants.js';
 
-export async function load() {
+export async function loadElectronLlm(options?: LoadOptions) {
   const processType = await getProcessType();
   let loadFunction: MainLoadFunction | RendererLoadFunction;
 
   if (processType === 'main') {
-    loadFunction = (await import('./main/index.js')).load;
+    loadFunction = (await import('./main/index.js')).loadElectronLlm;
   } else if (processType === 'renderer') {
-    loadFunction = (await import('./renderer/index.js')).load;
+    loadFunction = (await import('./renderer/index.js')).loadElectronLlm;
   } else if (processType === 'preload') {
-    loadFunction = (await import('./preload/index.js')).load;
+    loadFunction = (await import('./preload/index.js')).loadElectronLlm;
   } else {
     throw new Error(`Unsupported process type: ${processType}`);
   }
 
-  await loadFunction();
+  await loadFunction(options);
 }

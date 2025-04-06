@@ -13,9 +13,11 @@ async function loadModel(options: LanguageModelCreateOptions) {
   try {
     languageModel = await LanguageModel.create(options);
   } catch (error) {
+    console.error(error);
+
     process.parentPort?.postMessage({
       type: UTILITY_MESSAGE_TYPES.ERROR,
-      data: error instanceof Error ? error.message : String(error),
+      data: error,
     });
   }
 }
@@ -63,9 +65,11 @@ async function generateResponse(
       });
     }
   } catch (error) {
+    console.error(error);
+
     process.parentPort?.postMessage({
       type: UTILITY_MESSAGE_TYPES.ERROR,
-      data: error instanceof Error ? error.message : String(error),
+      data: error,
     });
   }
 }
