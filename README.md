@@ -1,9 +1,12 @@
 # @electron/llm
 
-This module makes it easy for developers to build local-first applications interacting with local large language models (LLMs).
+This module makes it easy for developers to prototype local-first applications interacting with local large language models (LLMs).
 
-It is functionally very similar to Chromium's `window.AI` API, except that you can supply any GGUF model. Under the hood, `@electron/llm`
-makes use of [node-llama-cpp](https://github.com/withcatai/node-llama-cpp).
+It aims for an API surface similar to Chromium's `window.AI` API, except that you can supply any GGUF model. Under the hood, `@electron/llm`
+makes use of [node-llama-cpp](https://github.com/withcatai/node-llama-cpp). Our goal is to make use of native LLM capabilities in Electron
+_easier_ than if you consumed a Llama.cpp implementation directly - but not more feature-rich.
+
+This module is currently experimental. We don't know yet whether the Electron maintainers will continue to invest in this area.
 
 # Quick Start
 
@@ -66,5 +69,3 @@ npm run test:coverage
 ```
 
 For more details, see [\_\_tests\_\_/README.md](\_\_tests\_\_/README.md).
-
-
