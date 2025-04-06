@@ -81,22 +81,17 @@ const electronLlm: ElectronLlmRenderer = {
   destroy: async (): Promise<void> =>
     ipcRenderer.invoke('ELECTRON_LLM_DESTROY'),
   prompt: async (
-    input: string,
+    input: string = '',
     options?: LanguageModelPromptOptions,
   ): Promise<string> => {
-    if (typeof input !== 'string') {
-      throw new TypeError('input must be a string');
-    }
     validatePromptOptions(options);
+
     return ipcRenderer.invoke('ELECTRON_LLM_PROMPT', input, options);
   },
   promptStreaming: async (
-    input: string,
+    input: string = '',
     options?: LanguageModelPromptOptions,
   ): Promise<string> => {
-    if (typeof input !== 'string') {
-      throw new TypeError('input must be a string');
-    }
     validatePromptOptions(options);
     return ipcRenderer.invoke('ELECTRON_LLM_PROMPT_STREAMING', input, options);
   },
