@@ -23,5 +23,11 @@ export interface ElectronLlmRenderer {
 // Main interfaces
 export interface ElectronLlmMain {}
 
-export type MainLoadFunction = () => Promise<void>;
+export type MainLoadOptions = {
+  isAutomaticPreloadDisabled?: boolean;
+};
+
+export type LoadOptions = MainLoadOptions;
+
+export type MainLoadFunction = (options?: LoadOptions) => Promise<void>;
 export type RendererLoadFunction = () => Promise<void>;

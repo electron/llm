@@ -1,4 +1,7 @@
-import { getLlama, LlamaModel, LlamaChatSession } from 'node-llama-cpp';
+import type {
+  LlamaChatSession,
+  LlamaModel,
+} from 'node-llama-cpp' with { 'resolution-mode': 'import' };
 
 export enum LanguageModelPromptRole {
   SYSTEM = 'system',
@@ -46,6 +49,16 @@ interface AIAvailability {
   reason?: string;
 }
 
+// prettier-ignore
+let _llamaCpp: typeof import('node-llama-cpp', { with: { 'resolution-mode': 'import' } });
+async function getLlamaCpp() {
+  if (!_llamaCpp) {
+    _llamaCpp = await import('node-llama-cpp');
+  }
+
+  return _llamaCpp;
+}
+
 export class LanguageModel {
   private inputUsage: number = 0;
   private inputQuota: number = 3000; // this is defined in the api spec, but i'm not sure if we need this.
@@ -81,10 +94,11 @@ export class LanguageModel {
     options: LanguageModelCreateOptions,
   ): Promise<LanguageModel> {
     try {
-      const llama = await getLlama();
+      const llamaCpp = await getLlamaCpp();
+      const llama = await llamaCpp.getLlama();
       const model = await llama.loadModel({ modelPath: options.modelPath });
       const context = await model.createContext();
-      const session = new LlamaChatSession({
+      const session = new llamaCpp.LlamaChatSession({
         contextSequence: context.getSequence(),
       });
       process.parentPort?.postMessage({
@@ -100,7 +114,9 @@ export class LanguageModel {
   // TODO: i'm not sure if this is the right way to implement this
   static async availability(): Promise<AIAvailability> {
     try {
-      const llama = await getLlama();
+      const llamaCpp = await getLlamaCpp();
+      const llama = await llamaCpp.getLlama();
+
       if (!llama) {
         return {
           status: 'unavailable',
