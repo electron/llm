@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    .config-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-container {
+      margin-top: 20px;
+      display: none;  /* Hidden by default until model is loaded */
+    }
+    .chat-messages {
+      border: 1px solid #ccc;
+      height: 400px;
+      overflow-y: auto;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 8px;
+      border-radius: 5px;
+    }
+    .user-message {
+      background-color: #e3f2fd;
+      margin-left: 20px;
+    }
+    .model-message {
+      background-color: #f5f5f5;
+      margin-right: 20px;
+    }
+    .chat-input {
+      display: flex;
+      gap: 10px;
+    }
+    .chat-input textarea {
+      flex-grow: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hello World</h1>
+
+  <div class="config-form">
+    <div class="form-group">
+      <label for="modelFile">Model File:</label>
+      <input type="file" id="modelFile">
+    </div>
+
+    <div class="form-group">
+      <label for="systemPrompt">System Prompt:</label>
+      <textarea id="systemPrompt" rows="3"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="initialPrompts">Initial Prompts (one per line):</label>
+      <textarea id="initialPrompts" rows="5"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="topK">Top K:</label>
+      <input type="number" id="topK" value="40">
+    </div>
+
+    <div class="form-group">
+      <label for="temperature">Temperature:</label>
+      <input type="number" id="temperature" step="0.1" value="0.8">
+    </div>
+
+    <button onclick="loadModel()">Load Model</button>
+  </div>
+
+  <div class="chat-container" id="chatContainer">
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+      <textarea
+        id="userInput"
+        rows="3"
+        placeholder="Type your message here..."
+        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }">
+      </textarea>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script type="module">
+    window.loadModel = async () => {
+      const modelFile = document.getElementById('modelFile').files[0];
+
+      if (!modelFile) {
+        alert('Please select a model file');
+        return;
+      }
+
+      const modelPath = await window.electron.getPathForFile(modelFile);
+      const systemPrompt = document.getElementById('systemPrompt').value;
+      const initialPromptsText = document.getElementById('initialPrompts').value;
+      const topK = parseInt(document.getElementById('topK').value);
+      const temperature = parseFloat(document.getElementById('temperature').value);
+
+      // Convert initial prompts from text to array of objects
+      const initialPrompts = initialPromptsText
+        .split('\n')
+        .filter(text => text.trim())
+        .map(text => ({ role: 'user', content: text }));
+
+      try {
+        await window.electronLlm.create({
+          modelPath,
+          systemPrompt: systemPrompt || undefined,
+          initialPrompts: initialPrompts.length > 0 ? initialPrompts : undefined,
+          topK: !isNaN(topK) ? topK : undefined,
+          temperature: !isNaN(temperature) ? temperature : undefined,
+        });
+        // Show chat interface after successful load
+        document.getElementById('chatContainer').style.display = 'block';
+      } catch (error) {
+        console.error('Error loading model:', error);
+        alert('Error loading model: ' + error.message);
+      }
+    };
+
+    window.sendMessage = async () => {
+      const userInput = document.getElementById('userInput');
+      const messagesContainer = document.getElementById('chatMessages');
+
+      const userMessage = userInput.value.trim();
+      if (!userMessage) return;
+
+      // Add user message to chat
+      messagesContainer.innerHTML += `
+        <div class="message user-message">
+          <strong>You:</strong> ${userMessage}
+        </div>
+      `;
+
+      // Clear input
+      userInput.value = '';
+
+      try {
+        // Get model's response
+        const response = await window.electronLlm.prompt(userMessage);
+
+        // Add model's response to chat
+        messagesContainer.innerHTML += `
+          <div class="message model-message">
+            <strong>Model:</strong> ${response}
+          </div>
+        `;
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      } catch (error) {
+        console.error('Error getting response:', error);
+        alert('Error getting response: ' + error.message);
+      }
+    };
+  </script>
+</body>
+</html>
