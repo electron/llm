@@ -1,6 +1,7 @@
 import { ipcMain, utilityProcess, UtilityProcess } from 'electron';
 import { once } from 'node:events';
 import path from 'node:path';
+import { deepEqual } from 'node:assert/strict';
 
 import { IpcRendererMessage } from '../common/ipc-channel-names.js';
 import {
@@ -10,27 +11,30 @@ import {
 import { UTILITY_MESSAGE_TYPES } from '../utility/messages.js';
 
 let aiProcess: UtilityProcess | null = null;
+let aiProcessCreationOptions: LanguageModelCreateOptions | null = null;
 
 export function registerAiHandlers() {
   ipcMain.handle(IpcRendererMessage.ELECTRON_LLM_DESTROY, () => stopModel());
 
   ipcMain.handle(
     IpcRendererMessage.ELECTRON_LLM_CREATE,
-    async (_event, options?: LanguageModelCreateOptions) => {
-      try {
-        stopModel();
-      } catch (error) {
-        throw new Error(
-          `Failed to stop previous AI model process: ${(error as Error).message || 'Unknown error'}`,
-        );
+    async (_event, options: LanguageModelCreateOptions) => {
+      if (!shouldStartNewAiProcess(options)) {
+        return;
+      }
+
+      if (aiProcess) {
+        try {
+          await stopModel();
+        } catch (error) {
+          throw new Error(
+            `Failed to stop previous AI model process: ${(error as Error).message || 'Unknown error'}`,
+          );
+        }
       }
 
       aiProcess = await startAiModel();
-      if (!aiProcess) {
-        throw new Error(
-          'startAiModelProcess: error starting AI model process.',
-        );
-      }
+
       const messagePromise = once(aiProcess, 'message');
       aiProcess.postMessage({
         type: UTILITY_MESSAGE_TYPES.LOAD_MODEL,
@@ -40,11 +44,11 @@ export function registerAiHandlers() {
       const timeoutPromise = new Promise<any>((_, reject) => {
         setTimeout(
           () => reject(new Error('AI model process start timed out.')),
-          20000,
+          60000,
         );
       });
 
-      // Give the AI model process 20 seconds to load the model
+      // Give the AI model process 60 seconds to load the model
       const [data] = await Promise.race([messagePromise, timeoutPromise]);
       const { type, data: responseData } = data;
 
@@ -60,10 +64,13 @@ export function registerAiHandlers() {
 
   ipcMain.handle(
     IpcRendererMessage.ELECTRON_LLM_PROMPT,
-    async (event, input: string, options: LanguageModelPromptOptions) => {
+    async (_event, input: string, options: LanguageModelPromptOptions) => {
       if (!aiProcess) {
-        throw new Error('AI model process not started.');
+        throw new Error(
+          'AI model process not started. Please do so with `electronAi.create()`',
+        );
       }
+
       aiProcess.postMessage({
         type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
         data: { input, stream: false, options },
@@ -142,8 +149,6 @@ export async function startAiModel(): Promise<UtilityProcess> {
     '../utility/call-ai-model-entry-point.js',
   );
 
-  console.log(`Starting AI model from ${utilityScriptPath}`);
-
   const aiProcess = utilityProcess.fork(utilityScriptPath, [], {
     stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
   });
@@ -153,6 +158,7 @@ export async function startAiModel(): Promise<UtilityProcess> {
       console.info(`AI model child process stdout: ${data}`);
     });
   }
+
   if (aiProcess.stderr) {
     aiProcess.stderr.on('data', (data) => {
       console.error(`AI model child process stderror: ${data}`);
@@ -187,6 +193,19 @@ async function stopModel(): Promise<void> {
     }
 
     aiProcess = null;
+  }
+}
+
+function shouldStartNewAiProcess(options: LanguageModelCreateOptions): boolean {
+  if (!aiProcess || !aiProcessCreationOptions) {
+    return true;
+  }
+
+  try {
+    deepEqual(options, aiProcessCreationOptions);
+    return false;
+  } catch {
+    return true;
   }
 }
 

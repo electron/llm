@@ -73,7 +73,7 @@ const validatePromptOptions = (options?: LanguageModelPromptOptions): void => {
   }
 };
 
-const electronLlm: ElectronLlmRenderer = {
+const electronAi: ElectronLlmRenderer = {
   create: async (options?: LanguageModelCreateOptions): Promise<void> => {
     validateCreateOptions(options);
     return ipcRenderer.invoke('ELECTRON_LLM_CREATE', options);
@@ -104,7 +104,7 @@ export const loadElectronLlm: RendererLoadFunction = async () => {
     return;
   }
 
-  contextBridge.exposeInMainWorld('electronLlm', electronLlm);
+  contextBridge.exposeInMainWorld('electronAi', electronAi);
   loaded = true;
 };
 
