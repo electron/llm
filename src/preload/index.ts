@@ -91,9 +91,57 @@ const electronAi: ElectronLlmRenderer = {
   promptStreaming: async (
     input: string = '',
     options?: LanguageModelPromptOptions,
-  ): Promise<string> => {
+  ): Promise<AsyncIterableIterator<string>> => {
     validatePromptOptions(options);
-    return ipcRenderer.invoke('ELECTRON_LLM_PROMPT_STREAMING', input, options);
+
+    // Create a promise that will resolve with the port from main process
+    return new Promise((resolve) => {
+      ipcRenderer.once('ELECTRON_LLM_PROMPT_STREAMING_PORT', (event) => {
+        // Access the port from the event's ports array
+        const [port] = event.ports;
+
+        // Start the port to receive messages
+        port.start();
+
+        const iterator: AsyncIterableIterator<string> = {
+          async next(): Promise<IteratorResult<string, any>> {
+            const message = await new Promise<IteratorResult<string, any>>(
+              (resolve, reject) => {
+                port.onmessage = (event) => {
+                  if (event.data.type === 'error') {
+                    reject(new Error(event.data.error));
+                  } else if (event.data.type === 'done') {
+                    resolve({ done: true, value: undefined });
+                  } else {
+                    resolve({ value: event.data.chunk, done: false });
+                  }
+                };
+              },
+            );
+            return message;
+          },
+          async return() {
+            port.close();
+            return { done: true, value: undefined };
+          },
+          async throw(error) {
+            port.close();
+            throw error;
+          },
+          [Symbol.asyncIterator]() {
+            return this;
+          },
+        };
+
+        resolve(iterator);
+      });
+
+      // Request streaming from main process
+      ipcRenderer.send('ELECTRON_LLM_PROMPT_STREAMING_REQUEST', {
+        input,
+        options,
+      });
+    });
   },
 };
 

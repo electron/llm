@@ -17,7 +17,7 @@ export interface ElectronLlmRenderer {
   promptStreaming: (
     input: string,
     options?: LanguageModelPromptOptions,
-  ) => Promise<string>;
+  ) => Promise<AsyncIterableIterator<string>>;
 }
 
 // Main interfaces

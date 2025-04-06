@@ -17,7 +17,7 @@ export enum LanguageModelPromptType {
 
 type LanguageModelPromptContent = string | ArrayBuffer;
 
-interface LanguageModelPrompt {
+export interface LanguageModelPrompt {
   role: LanguageModelPromptRole;
   type: LanguageModelPromptType;
   content: LanguageModelPromptContent;
