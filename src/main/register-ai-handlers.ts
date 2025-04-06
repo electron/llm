@@ -109,6 +109,7 @@ export function registerAiHandlers() {
 
         const handler = ([msg]: any[]) => {
           const { type, data } = msg;
+
           if (type === UTILITY_MESSAGE_TYPES.STREAM) {
             processChunk(data);
             chunks.push(data);

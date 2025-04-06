@@ -115,7 +115,7 @@
         .map(text => ({ role: 'user', content: text }));
 
       try {
-        await window.electronLlm.create({
+        await window.electronAi.create({
           modelPath,
           systemPrompt: systemPrompt || undefined,
           initialPrompts: initialPrompts.length > 0 ? initialPrompts : undefined,
@@ -149,7 +149,7 @@
 
       try {
         // Get model's response
-        const response = await window.electronLlm.prompt(userMessage);
+        const response = await window.electronAi.prompt(userMessage);
 
         // Add model's response to chat
         messagesContainer.innerHTML += `
