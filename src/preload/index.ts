@@ -20,7 +20,11 @@ const electronLlm: ElectronLlmRenderer = {
     input: string,
     options?: LanguageModelPromptOptions,
   ): Promise<string> =>
-    ipcRenderer.invoke(IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING, input),
+    ipcRenderer.invoke(
+      IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING,
+      input,
+      options,
+    ),
 };
 
 export const load: RendererLoadFunction = async () => {

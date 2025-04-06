@@ -1,13 +1,8 @@
-import {
-  BrowserWindow,
-  dialog,
-  ipcMain,
-  utilityProcess,
-  UtilityProcess,
-} from 'electron';
-import { IpcRendererMessage } from '../common/ipc-channel-names.js';
+import { ipcMain, utilityProcess, UtilityProcess } from 'electron';
 import { once } from 'node:events';
 import path from 'node:path';
+
+import { IpcRendererMessage } from '../common/ipc-channel-names.js';
 import {
   LanguageModelCreateOptions,
   LanguageModelPromptOptions,
@@ -22,12 +17,13 @@ export function registerAiHandlers() {
 
   ipcMain.handle(
     IpcRendererMessage.ELECTRON_LLM_CREATE,
-    async (event, options?: LanguageModelCreateOptions) => {
+    async (_event, options?: LanguageModelCreateOptions) => {
       try {
         stopModel();
       } catch (error) {
-        console.error('Failed to stop previous AI model process.');
-        throw error;
+        throw new Error(
+          `Failed to stop previous AI model process: ${(error as Error).message || 'Unknown error'}`,
+        );
       }
 
       aiProcess = await startAiModel();
