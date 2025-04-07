@@ -28,6 +28,7 @@ export type MainLoadOptions = {
 };
 
 export type LoadOptions = MainLoadOptions;
+export type ElectronAi = ElectronLlmRenderer;
 
 export type MainLoadFunction = (options?: LoadOptions) => Promise<void>;
 export type RendererLoadFunction = () => Promise<void>;

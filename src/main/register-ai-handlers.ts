@@ -28,6 +28,8 @@ export function registerAiHandlers() {
         return;
       }
 
+      aiProcessCreationOptions = options;
+
       if (aiProcess) {
         try {
           await stopModel();
