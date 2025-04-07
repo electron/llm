@@ -100,6 +100,7 @@ export class LanguageModel {
       const context = await model.createContext();
       const session = new llamaCpp.LlamaChatSession({
         contextSequence: context.getSequence(),
+        systemPrompt: options.systemPrompt,
       });
       process.parentPort?.postMessage({
         type: 'modelLoaded',
@@ -254,6 +255,7 @@ export class LanguageModel {
     this.inputUsage = 0;
     this.session = undefined;
     this.context = undefined;
+
     process.parentPort.postMessage({
       type: 'stopped',
       data: 'Model session destroyed.',
