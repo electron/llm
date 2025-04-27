@@ -1,4 +1,5 @@
 import { session, app, BrowserWindow } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { GetModelPathFunction, MainLoadFunction } from '../interfaces.js';
@@ -22,8 +23,23 @@ export const loadElectronLlm: MainLoadFunction = async (options) => {
 
   const getModelPath: GetModelPathFunction =
     options?.getModelPath ||
-    ((modelAlias: string) => {
-      return path.join(app.getPath('userData'), 'models', modelAlias);
+    (async (modelAlias: string) => {
+      const baseModelsPath = path.resolve(app.getPath('userData'), 'models');
+      if (!fs.existsSync(baseModelsPath)) {
+        return null;
+      }
+      const finalPath = path.resolve(baseModelsPath, modelAlias);
+      if (!fs.existsSync(finalPath)) {
+        // Let's not load a model that doesn't exist
+        return null;
+      }
+      const realPath = await fs.promises.realpath(finalPath);
+      const relativePath = path.relative(baseModelsPath, realPath);
+      if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+        // Model is outside of the base models path
+        return null;
+      }
+      return realPath;
     });
 
   // Register handler
