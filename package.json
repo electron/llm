@@ -1,7 +1,7 @@
 {
   "name": "@electron/llm",
   "version": "0.1.0",
-  "description": "Load and use an LLM model directly in Electron",
+  "description": "Load and use an LLM model directly in Electron. Experimental.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "workspaces": [
