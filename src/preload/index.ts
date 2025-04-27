@@ -157,15 +157,8 @@ const electronAi: ElectronLlmRenderer = {
   },
 };
 
-let loaded = false;
-
 export const loadElectronLlm: RendererLoadFunction = async () => {
-  if (loaded) {
-    return;
-  }
-
   contextBridge.exposeInMainWorld('electronAi', electronAi);
-  loaded = true;
 };
 
 loadElectronLlm();
