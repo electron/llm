@@ -29,6 +29,11 @@ export interface LanguageModelCreateOptions {
   topK?: number;
   temperature?: number;
   signal?: AbortSignal;
+  modelAlias: string;
+}
+
+export interface InternalLanguageModelCreateOptions
+  extends LanguageModelCreateOptions {
   modelPath: string;
 }
 
@@ -90,7 +95,7 @@ export class LanguageModel {
   }
 
   static async create(
-    options: LanguageModelCreateOptions,
+    options: InternalLanguageModelCreateOptions,
   ): Promise<LanguageModel> {
     try {
       const llamaCpp = await getLlamaCpp();

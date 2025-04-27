@@ -33,7 +33,7 @@ describe('Preload Interface', () => {
   });
 
   it('create should invoke with correct ipcMessage and options', async () => {
-    const options = { modelPath: 'dummy-model.gguf' };
+    const options = { modelAlias: 'dummy-model' };
     await (globalThis as any).electronAi.create(options);
     expect(ipcRenderer.invoke).toHaveBeenCalledWith(
       IpcRendererMessage.ELECTRON_LLM_CREATE,
@@ -95,11 +95,6 @@ describe('Preload Interface', () => {
         } as MessageEvent);
       }
     });
-
-    // Create a promise that resolves after a short delay to allow the iterator to be returned
-    const streamingPromise = (globalThis as any).electronAi.promptStreaming(
-      input,
-    );
 
     await (globalThis as any).electronAi.promptStreaming(input);
 

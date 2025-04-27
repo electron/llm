@@ -61,6 +61,7 @@ Loads the LLM module in the main process.
 
 - `options`: Optional configuration
   - `isAutomaticPreloadDisabled`: If true, the automatic preload script injection is disabled
+  - `getModelPath`: A function that takes a model alias and returns the full path to the GGUF model file. By default, this function returns a path in the app's userData directory: `path.join(app.getPath('userData'), 'models', modelAlias)`. You can override this to customize where models are stored.
 
 ### Renderer Process API
 
@@ -71,7 +72,7 @@ The renderer process API is exposed via `window.electronAi` once loaded via prel
 Creates and initializes a language model instance. This module will at most create one utility process with one model loaded. If you call `create` multiple times, it will return the existing instance. If you call it with new (not deep equal) options, it will stop and unload previously loaded models and load the model defined in the new options.
 
 - `options`: Configuration for the language model
-  - `modelPath`: Path to the GGUF model file
+  - `modelAlias`: Name of the model you want to load. Will be passed to `getModelPath()`.
   - `systemPrompt`: Optional system prompt to initialize the model
   - `initialPrompts`: Optional array of initial prompts to provide context
   - `topK`: Optional parameter to control diversity of generated text

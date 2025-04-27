@@ -19,10 +19,10 @@ function validateCreateOptions(options?: LanguageModelCreateOptions): void {
   if (!options) return;
 
   if (
-    options.modelPath === undefined ||
-    typeof options.modelPath !== 'string'
+    options.modelAlias === undefined ||
+    typeof options.modelAlias !== 'string'
   ) {
-    throw new TypeError('modelPath is required and must be a string');
+    throw new TypeError('modelAlias is required and must be a string');
   }
 
   if (

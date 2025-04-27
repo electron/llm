@@ -25,6 +25,7 @@ export interface ElectronLlmMain {}
 
 export type MainLoadOptions = {
   isAutomaticPreloadDisabled?: boolean;
+  getModelPath?: GetModelPathFunction;
 };
 
 export type LoadOptions = MainLoadOptions;
@@ -32,3 +33,7 @@ export type ElectronAi = ElectronLlmRenderer;
 
 export type MainLoadFunction = (options?: LoadOptions) => Promise<void>;
 export type RendererLoadFunction = () => Promise<void>;
+
+export type GetModelPathFunction = (
+  modelAlias: string,
+) => Promise<string> | string;

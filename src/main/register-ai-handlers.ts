@@ -14,11 +14,18 @@ import {
   LanguageModelPromptOptions,
 } from '../language-model.js';
 import { UTILITY_MESSAGE_TYPES } from '../utility/messages.js';
+import { GetModelPathFunction } from '../interfaces.js';
 
 let aiProcess: UtilityProcess | null = null;
 let aiProcessCreationOptions: LanguageModelCreateOptions | null = null;
 
-export function registerAiHandlers() {
+export interface RegisterAiHandlersOptions {
+  getModelPath: GetModelPathFunction;
+}
+
+export function registerAiHandlers({
+  getModelPath,
+}: RegisterAiHandlersOptions) {
   ipcMain.handle(IpcRendererMessage.ELECTRON_LLM_DESTROY, () => stopModel());
 
   ipcMain.handle(
@@ -43,9 +50,13 @@ export function registerAiHandlers() {
       aiProcess = await startAiModel();
 
       const messagePromise = once(aiProcess, 'message');
+
       aiProcess.postMessage({
         type: UTILITY_MESSAGE_TYPES.LOAD_MODEL,
-        data: options,
+        data: {
+          ...options,
+          modelPath: await getModelPath(options.modelAlias),
+        },
       });
 
       const timeoutPromise = new Promise<any>((_, reject) => {

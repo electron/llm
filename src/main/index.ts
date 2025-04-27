@@ -1,7 +1,7 @@
 import { session, app, BrowserWindow } from 'electron';
 import path from 'node:path';
 
-import { MainLoadFunction } from '../interfaces.js';
+import { GetModelPathFunction, MainLoadFunction } from '../interfaces.js';
 import { registerAiHandlers } from './register-ai-handlers.js';
 
 export const loadElectronLlm: MainLoadFunction = async (options) => {
@@ -20,8 +20,14 @@ export const loadElectronLlm: MainLoadFunction = async (options) => {
     });
   }
 
+  const getModelPath: GetModelPathFunction =
+    options?.getModelPath ||
+    ((modelAlias: string) => {
+      return path.join(app.getPath('userData'), 'models', modelAlias);
+    });
+
   // Register handler
-  registerAiHandlers();
+  registerAiHandlers({ getModelPath });
 };
 
 /**

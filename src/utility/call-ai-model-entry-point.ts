@@ -4,14 +4,14 @@ import {
   LanguageModelPromptRole,
   LanguageModelPromptType,
   LanguageModelPromptOptions,
-  LanguageModelCreateOptions,
   LanguageModelPrompt,
+  InternalLanguageModelCreateOptions,
 } from '../language-model.js';
 import { UTILITY_MESSAGE_TYPES } from './messages.js';
 
 let languageModel: LanguageModel;
 
-async function loadModel(options: LanguageModelCreateOptions) {
+async function loadModel(options: InternalLanguageModelCreateOptions) {
   try {
     languageModel = await LanguageModel.create(options);
   } catch (error) {
