@@ -2,11 +2,9 @@
 
 This module makes it easy for developers to prototype local-first applications interacting with local large language models (LLMs).
 
-It aims for an API surface similar to Chromium's `window.AI` API, except that you can supply any GGUF model. Under the hood, `@electron/llm`
-makes use of [node-llama-cpp](https://github.com/withcatai/node-llama-cpp). Our goal is to make use of native LLM capabilities in Electron
-_easier_ than if you consumed a Llama.cpp implementation directly - but not more feature-rich.
+It aims for an API surface similar to Chromium's `window.AI` API, except that you can supply any GGUF model. Under the hood, `@electron/llm` makes use of [node-llama-cpp](https://github.com/withcatai/node-llama-cpp). Our goal is to make use of native LLM capabilities in Electron _easier_ than if you consumed a Llama.cpp implementation directly - but not more feature-rich.
 
-This module is currently experimental. We don't know yet whether the Electron maintainers will continue to invest in this area.
+`@electron/llm` is an experimental package. The Electron maintainers are exploring different ways to support and enable developers interested in running language models locally - and this package is just one of the potential avenues we're exploring. It's possible that we'll go in a different direction. Before using this package in a production app, be aware that you might have to migrate to something else!
 
 # Quick Start
 
@@ -52,6 +50,48 @@ await window.electronAi.create({
 // Then, talk to it
 const response = await window.electronAi.prompt("Hi! How are you doing today?")
 ```
+
+## API
+
+### Main Process API
+
+#### `loadElectronLlm(options?: LoadOptions): Promise<void>`
+
+Loads the LLM module in the main process.
+
+- `options`: Optional configuration
+  - `isAutomaticPreloadDisabled`: If true, the automatic preload script injection is disabled
+
+### Renderer Process API
+
+The renderer process API is exposed via `window.electronAi` and provides the following methods:
+
+#### `create(options: LanguageModelCreateOptions): Promise<void>`
+
+Creates and initializes a language model instance. This module will at most create one utility process with one model loaded. If you call `create` multiple times, it will return the existing instance. If you call it with new (not deep equal) options, it will stop and unload previously loaded models and load the model defined in the new options.
+
+- `options`: Configuration for the language model
+  - `modelPath`: Path to the GGUF model file
+
+#### `destroy(): Promise<void>`
+
+Destroys the current language model instance and frees resources.
+
+#### `prompt(input: string, options?: LanguageModelPromptOptions): Promise<string>`
+
+Sends a prompt to the model and returns the complete response as a string.
+
+- `input`: The prompt text to send to the model
+- `options`: Optional configuration for the prompt
+- Returns: A promise that resolves to the model's response
+
+#### `promptStreaming(input: string, options?: LanguageModelPromptOptions): Promise<AsyncIterableIterator<string>>`
+
+Sends a prompt to the model and returns the response as a stream of text chunks.
+
+- `input`: The prompt text to send to the model
+- `options`: Optional configuration for the prompt
+- Returns: A promise that resolves to an async iterator of response chunks
 
 # Testing
 
