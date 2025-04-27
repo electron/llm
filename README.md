@@ -1,8 +1,8 @@
 # @electron/llm
 
-This module makes it easy for developers to prototype local-first applications interacting with local large language models (LLMs).
+This module makes it easy for developers to prototype local-first applications interacting with local large language models (LLMs), especially in chat contexts.
 
-It aims for an API surface similar to Chromium's `window.AI` API, except that you can supply any GGUF model. Under the hood, `@electron/llm` makes use of [node-llama-cpp](https://github.com/withcatai/node-llama-cpp). Our goal is to make use of native LLM capabilities in Electron _easier_ than if you consumed a Llama.cpp implementation directly - but not more feature-rich.
+It aims for an API surface similar to Chromium's `window.AI` API, except that you can supply any GGUF model. Under the hood, `@electron/llm` makes use of [node-llama-cpp](https://github.com/withcatai/node-llama-cpp). Our goal is to make use of native LLM capabilities in Electron _easier_ than if you consumed a Llama.cpp implementation directly - but not more feature-rich. Today, this module provides a reference implementation of `node-llama-cpp` that loads the model in a utility process and uses Chromium Mojo IPC pipes to efficiently facilitate streaming of responses between the utility process and renderers. If you're building an advanced app with LLM, you might want to use this module as a reference for your process architecture.
 
 `@electron/llm` is an experimental package. The Electron maintainers are exploring different ways to support and enable developers interested in running language models locally - and this package is just one of the potential avenues we're exploring. It's possible that we'll go in a different direction. Before using this package in a production app, be aware that you might have to migrate to something else!
 
@@ -64,7 +64,7 @@ Loads the LLM module in the main process.
 
 ### Renderer Process API
 
-The renderer process API is exposed via `window.electronAi` and provides the following methods:
+The renderer process API is exposed via `window.electronAi` once loaded via preload and provides the following methods:
 
 #### `create(options: LanguageModelCreateOptions): Promise<void>`
 
@@ -72,6 +72,11 @@ Creates and initializes a language model instance. This module will at most crea
 
 - `options`: Configuration for the language model
   - `modelPath`: Path to the GGUF model file
+  - `systemPrompt`: Optional system prompt to initialize the model
+  - `initialPrompts`: Optional array of initial prompts to provide context
+  - `topK`: Optional parameter to control diversity of generated text
+  - `temperature`: Optional parameter to control randomness of generated text
+  - `signal`: Optional AbortSignal to cancel the model loading
 
 #### `destroy(): Promise<void>`
 
@@ -83,6 +88,9 @@ Sends a prompt to the model and returns the complete response as a string.
 
 - `input`: The prompt text to send to the model
 - `options`: Optional configuration for the prompt
+  - `responseJSONSchema`: Optional JSON schema to format the response as structured data
+  - `signal`: Optional AbortSignal to cancel the request
+  - `timeout`: Optional timeout in milliseconds (defaults to 20000ms)
 - Returns: A promise that resolves to the model's response
 
 #### `promptStreaming(input: string, options?: LanguageModelPromptOptions): Promise<AsyncIterableIterator<string>>`
@@ -91,6 +99,9 @@ Sends a prompt to the model and returns the response as a stream of text chunks.
 
 - `input`: The prompt text to send to the model
 - `options`: Optional configuration for the prompt
+  - `responseJSONSchema`: Optional JSON schema to format the response as structured data
+  - `signal`: Optional AbortSignal to cancel the request
+  - `timeout`: Optional timeout in milliseconds (defaults to 20000ms)
 - Returns: A promise that resolves to an async iterator of response chunks
 
 # Testing

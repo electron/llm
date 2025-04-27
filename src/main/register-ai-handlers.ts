@@ -94,11 +94,11 @@ export function registerAiHandlers() {
         }
       });
 
-      // Set a timeout (e.g., 20 seconds) in case the child process doesn't reply.
+      // Set a timeout in case the child process doesn't reply.
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(
           () => reject(new Error('Prompt response timed out.')),
-          20000,
+          options.timeout || 20000,
         );
       });
 
@@ -108,7 +108,7 @@ export function registerAiHandlers() {
 
   ipcMain.on(
     IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING,
-    (event, { input, options }, rendererPort) => {
+    (_event, { input, options }, rendererPort) => {
       if (!aiProcess) {
         rendererPort.postMessage({
           type: 'error',
@@ -119,8 +119,8 @@ export function registerAiHandlers() {
 
       const { port1: mainPort, port2: utilityPort } = new MessageChannelMain();
 
-      mainPort.on('message', (event) => {
-        rendererPort.postMessage(event.data);
+      mainPort.on('message', (messageEvent) => {
+        rendererPort.postMessage(messageEvent.data);
       });
 
       aiProcess.postMessage(
@@ -244,8 +244,4 @@ function shouldStartNewAiProcess(options: LanguageModelCreateOptions): boolean {
   } catch {
     return true;
   }
-}
-
-function processChunk(data: any) {
-  console.log(`Received chunk: ${data}`);
 }
