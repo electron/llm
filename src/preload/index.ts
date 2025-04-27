@@ -9,7 +9,13 @@ import type {
   LanguageModelPromptOptions,
 } from '../language-model.js';
 
-const validateCreateOptions = (options?: LanguageModelCreateOptions): void => {
+/**
+ * Validates the options for creating a language model.
+ *
+ * @param options - The options to validate.
+ * @throws {TypeError} If the options are invalid.
+ */
+function validateCreateOptions(options?: LanguageModelCreateOptions): void {
   if (!options) return;
 
   if (
@@ -53,9 +59,15 @@ const validateCreateOptions = (options?: LanguageModelCreateOptions): void => {
   ) {
     throw new TypeError('signal must be an AbortSignal');
   }
-};
+}
 
-const validatePromptOptions = (options?: LanguageModelPromptOptions): void => {
+/**
+ * Validates the options for prompting a language model.
+ *
+ * @param options - The options to validate.
+ * @throws {TypeError} If the options are invalid.
+ */
+function validatePromptOptions(options?: LanguageModelPromptOptions): void {
   if (!options) return;
 
   if (
@@ -71,7 +83,7 @@ const validatePromptOptions = (options?: LanguageModelPromptOptions): void => {
   ) {
     throw new TypeError('signal must be an AbortSignal');
   }
-};
+}
 
 const electronAi: ElectronLlmRenderer = {
   create: async (options?: LanguageModelCreateOptions): Promise<void> => {

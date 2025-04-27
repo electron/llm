@@ -37,7 +37,6 @@ async function generateResponse(
     return;
   }
 
-  // TODO: support user and text types only for now
   const promptPayload = {
     role: LanguageModelPromptRole.USER,
     type: LanguageModelPromptType.TEXT,
@@ -60,6 +59,7 @@ async function generateResponse(
     } else {
       // Otherwise await the full response and post it
       const value = await languageModel.prompt(promptPayload, options);
+
       process.parentPort?.postMessage({
         type: UTILITY_MESSAGE_TYPES.DONE,
         data: value,

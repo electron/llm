@@ -35,6 +35,7 @@ export interface LanguageModelCreateOptions {
 export interface LanguageModelPromptOptions {
   responseJSONSchema?: object;
   signal?: AbortSignal;
+  timeout?: number;
 }
 
 interface LanguageModelParams {
@@ -60,8 +61,6 @@ async function getLlamaCpp() {
 }
 
 export class LanguageModel {
-  private inputUsage: number = 0;
-  private inputQuota: number = 3000; // this is defined in the api spec, but i'm not sure if we need this.
   readonly topK: number;
   readonly temperature: number;
   private systemPrompt?: string;
@@ -102,17 +101,18 @@ export class LanguageModel {
         contextSequence: context.getSequence(),
         systemPrompt: options.systemPrompt,
       });
+
       process.parentPort?.postMessage({
         type: 'modelLoaded',
         data: 'Model loaded successfully.',
       });
+
       return new LanguageModel(options, model, context, session);
     } catch (error) {
       throw error;
     }
   }
 
-  // TODO: i'm not sure if this is the right way to implement this
   static async availability(): Promise<AIAvailability> {
     try {
       const llamaCpp = await getLlamaCpp();
@@ -124,6 +124,7 @@ export class LanguageModel {
           reason: 'Llama runtime is not accessible.',
         };
       }
+
       return { status: 'available' };
     } catch (error) {
       return { status: 'unavailable', reason: (error as Error).message };
@@ -152,12 +153,12 @@ export class LanguageModel {
         type: 'error',
         data: 'Model session is not initialized.',
       });
+
       throw new Error('Model session is not initialized.');
     }
 
     const prompts = Array.isArray(input) ? input : [input];
     prompts.forEach(this.validatePrompt);
-    this.trackUsage(prompts);
 
     const processedInput = prompts
       .map((p) => this.parseContent(p.content))
@@ -186,7 +187,6 @@ export class LanguageModel {
 
     const prompts = Array.isArray(input) ? input : [input];
     prompts.forEach(this.validatePrompt);
-    this.trackUsage(prompts);
 
     if (prompts[0].type !== LanguageModelPromptType.TEXT) {
       throw new Error(
@@ -196,6 +196,7 @@ export class LanguageModel {
     const processedInput = prompts
       .map((p) => this.parseContent(p.content))
       .join('\n');
+
     return new ReadableStream({
       start: async (controller) => {
         await this.session!.prompt(processedInput, {
@@ -215,13 +216,6 @@ export class LanguageModel {
     });
   }
 
-  async measureInputUsage(
-    input: LanguageModelPrompt | LanguageModelPrompt[],
-    options?: LanguageModelPromptOptions,
-  ): Promise<number> {
-    return Promise.resolve(JSON.stringify(input).length * 0.1); // Example estimation
-  }
-
   private validatePrompt(prompt: LanguageModelPrompt) {
     if (prompt.role === LanguageModelPromptRole.SYSTEM) {
       throw new Error(
@@ -230,29 +224,7 @@ export class LanguageModel {
     }
   }
 
-  private async trackUsage(input: LanguageModelPrompt | LanguageModelPrompt[]) {
-    this.inputUsage += await this.measureInputUsage(input);
-    if (this.inputUsage > this.inputQuota) {
-      throw new Error('Quota exceeded');
-    }
-  }
-
-  clone(): Promise<LanguageModel> {
-    if (!this.context || !this.session) {
-      throw new Error('Model is not initialized');
-    }
-
-    return LanguageModel.create({
-      systemPrompt: this.systemPrompt,
-      initialPrompts: this.initialPrompts,
-      topK: this.topK,
-      temperature: this.temperature,
-      modelPath: '', // Placeholder, should be provided when cloning
-    });
-  }
-
   destroy(): void {
-    this.inputUsage = 0;
     this.session = undefined;
     this.context = undefined;
 
