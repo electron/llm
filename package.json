@@ -7,6 +7,10 @@
   "workspaces": [
     "end-to-end"
   ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "publishConfig": {
     "provenance": true
   },
@@ -36,7 +40,8 @@
     "test:e2e:tsc": "tsc -p end-to-end/tsconfig.json",
     "test:e2e:rebuild": "electron-rebuild",
     "test:e2e:run": "electron end-to-end/dist/main.js",
-    "prepare": "husky install"
+    "prepublishOnly": "npm run tsc",
+    "prepare": "husky"
   },
   "lint-staged": {
     "*.{js,ts}": [

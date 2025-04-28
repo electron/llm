@@ -1,5 +1,8 @@
 # @electron/llm
 
+[![Test](https://github.com/electron/llm/actions/workflows/test.yml/badge.svg)](https://github.com/electron/llm/actions/workflows/test.yml)
+[![npm version](https://img.shields.io/npm/v/@electron/llm.svg)](https://npmjs.org/package/@electron/llm)
+
 This module makes it easy for developers to prototype local-first applications interacting with local large language models (LLMs), especially in chat contexts.
 
 It aims for an API surface similar to Chromium's `window.AI` API, except that you can supply any GGUF model. Under the hood, `@electron/llm` makes use of [node-llama-cpp](https://github.com/withcatai/node-llama-cpp). Our goal is to make use of native LLM capabilities in Electron _easier_ than if you consumed a Llama.cpp implementation directly - but not more feature-rich. Today, this module provides a reference implementation of `node-llama-cpp` that loads the model in a utility process and uses Chromium Mojo IPC pipes to efficiently facilitate streaming of responses between the utility process and renderers. If you're building an advanced app with LLM, you might want to use this module as a reference for your process architecture.
