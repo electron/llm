@@ -36,4 +36,4 @@ export type RendererLoadFunction = () => Promise<void>;
 
 export type GetModelPathFunction = (
   modelAlias: string,
-) => Promise<string> | string;
+) => Promise<string | null> | string | null;

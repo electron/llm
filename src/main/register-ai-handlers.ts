@@ -35,6 +35,13 @@ export function registerAiHandlers({
         return;
       }
 
+      const modelPath = await getModelPath(options.modelAlias);
+      if (!modelPath) {
+        throw new Error(
+          `Model path not found for alias: ${options.modelAlias}. Please provide a valid model path.`,
+        );
+      }
+
       aiProcessCreationOptions = options;
 
       if (aiProcess) {
@@ -55,7 +62,7 @@ export function registerAiHandlers({
         type: UTILITY_MESSAGE_TYPES.LOAD_MODEL,
         data: {
           ...options,
-          modelPath: await getModelPath(options.modelAlias),
+          modelPath,
         },
       });
 
