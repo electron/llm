@@ -78,8 +78,8 @@ Creates and initializes a language model instance. This module will at most crea
   - `modelAlias`: Name of the model you want to load. Will be passed to `getModelPath()`.
   - `systemPrompt`: Optional system prompt to initialize the model
   - `initialPrompts`: Optional array of initial prompts to provide context
-  - `topK`: Optional parameter to control diversity of generated text
-  - `temperature`: Optional parameter to control randomness of generated text
+  - `topK`: Optional parameter to control diversity of generated text. 10 by default.
+  - `temperature`: Optional parameter to control randomness of generated text. 0.7 by default.
   - `signal`: Optional AbortSignal to cancel the model loading
 
 #### `destroy(): Promise<void>`
