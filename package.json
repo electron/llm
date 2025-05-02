@@ -65,7 +65,7 @@
     "url": "git+https://github.com/electron/llm.git"
   },
   "dependencies": {
-    "node-llama-cpp": "^3.5.0"
+    "node-llama-cpp": "^3.7.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.7.1",

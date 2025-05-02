@@ -1,4 +1,5 @@
 import type {
+  ChatHistoryItem,
   LlamaChatSession,
   LlamaModel,
 } from 'node-llama-cpp' with { 'resolution-mode': 'import' };
@@ -106,6 +107,12 @@ export class LanguageModel {
         contextSequence: context.getSequence(),
         systemPrompt: options.systemPrompt,
       });
+
+      if (options.initialPrompts && options.initialPrompts.length > 0) {
+        session.setChatHistory(
+          options.initialPrompts.map(this.initialPromptToChatHistoryItem),
+        );
+      }
 
       process.parentPort?.postMessage({
         type: 'modelLoaded',
@@ -227,6 +234,33 @@ export class LanguageModel {
         "NotSupportedError: 'system' role is not allowed in prompt()",
       );
     }
+  }
+
+  private static initialPromptToChatHistoryItem(
+    prompt: LanguageModelPrompt,
+  ): ChatHistoryItem {
+    if (prompt.role === LanguageModelPromptRole.SYSTEM) {
+      return {
+        type: 'system',
+        text: prompt.content.toString(),
+      };
+    }
+
+    if (prompt.role === LanguageModelPromptRole.USER) {
+      return {
+        type: 'user',
+        text: prompt.content.toString(),
+      };
+    }
+
+    if (prompt.role === LanguageModelPromptRole.ASSISTANT) {
+      return {
+        type: 'model',
+        response: [prompt.content.toString()],
+      };
+    }
+
+    throw new Error('Invalid prompt role.');
   }
 
   destroy(): void {
