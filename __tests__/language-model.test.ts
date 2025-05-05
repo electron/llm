@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
+import { LanguageModel } from '../src/language-model.js';
 import {
-  LanguageModel,
   LanguageModelPromptRole,
   LanguageModelPromptType,
-} from '../src/language-model.js';
+} from '../src/interfaces.js';
 
 vi.mock('node-llama-cpp', () => {
   return {
@@ -34,6 +34,7 @@ vi.mock('node-llama-cpp', () => {
 
 describe('LanguageModel with mocks', () => {
   const opts = {
+    modelAlias: 'dummy-model',
     modelPath: 'dummy-model.gguf',
     topK: 5,
     temperature: 0.8,
