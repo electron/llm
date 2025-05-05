@@ -80,7 +80,7 @@ Creates and initializes a language model instance. This module will at most crea
   - `initialPrompts`: Optional array of initial prompts to provide context
   - `topK`: Optional parameter to control diversity of generated text. 10 by default.
   - `temperature`: Optional parameter to control randomness of generated text. 0.7 by default.
-  - `signal`: Optional AbortSignal to cancel the model loading
+  - `requestUUID`: Optional UUID to cancel the model loading using 
 
 #### `destroy(): Promise<void>`
 
@@ -95,6 +95,7 @@ Sends a prompt to the model and returns the complete response as a string.
   - `responseJSONSchema`: Optional JSON schema to format the response as structured data
   - `signal`: Optional AbortSignal to cancel the request
   - `timeout`: Optional timeout in milliseconds (defaults to 20000ms)
+  - `requestUUID`: Optional UUID to cancel the model loading using 
 - Returns: A promise that resolves to the model's response
 
 #### `promptStreaming(input: string, options?: LanguageModelPromptOptions): Promise<AsyncIterableIterator<string>>`
@@ -106,7 +107,13 @@ Sends a prompt to the model and returns the response as a stream of text chunks.
   - `responseJSONSchema`: Optional JSON schema to format the response as structured data
   - `signal`: Optional AbortSignal to cancel the request
   - `timeout`: Optional timeout in milliseconds (defaults to 20000ms)
+  - `requestUUID`: Optional UUID to cancel the model loading using 
 - Returns: A promise that resolves to an async iterator of response chunks
+
+#### `abortRequest(requestUUID: string): Promise<void>`
+
+Allows the abortion of a currently running model load or prompting request. To use this API, make sure to pass in `requestUUID` to your
+requests.
 
 # Testing
 

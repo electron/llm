@@ -1,10 +1,59 @@
-import {
-  LanguageModelCreateOptions,
-  LanguageModelPromptOptions,
-} from './language-model.js';
-
 // Shared interfaces
 export interface ElectronLlmShared {}
+
+export type LanguageModelPromptContent = string | ArrayBuffer;
+
+export enum LanguageModelPromptType {
+  TEXT = 'text',
+  IMAGE = 'image',
+  AUDIO = 'audio',
+}
+
+export enum LanguageModelPromptRole {
+  SYSTEM = 'system',
+  USER = 'user',
+  ASSISTANT = 'assistant',
+}
+
+export interface LanguageModelPrompt {
+  role: LanguageModelPromptRole;
+  type: LanguageModelPromptType;
+  content: LanguageModelPromptContent;
+}
+
+export interface LanguageModelCreateOptions {
+  systemPrompt?: string;
+  initialPrompts?: LanguageModelPrompt[];
+  topK?: number;
+  temperature?: number;
+  requestUUID?: string;
+  modelAlias: string;
+}
+
+export interface InternalLanguageModelCreateOptions
+  extends LanguageModelCreateOptions {
+  modelPath: string;
+  signal?: AbortSignal;
+}
+
+export interface LanguageModelPromptOptions {
+  responseJSONSchema?: object;
+  requestUUID?: string;
+  timeout?: number;
+}
+
+export interface InternalLanguageModelPromptOptions
+  extends LanguageModelPromptOptions {
+  signal?: AbortSignal;
+}
+
+export type AiProcessModelCreateData = InternalLanguageModelCreateOptions;
+
+export interface AiProcessSendPromptData {
+  options: LanguageModelPromptOptions;
+  stream?: boolean;
+  input: string;
+}
 
 // Renderer interfaces
 export interface ElectronLlmRenderer {
@@ -18,6 +67,7 @@ export interface ElectronLlmRenderer {
     input: string,
     options?: LanguageModelPromptOptions,
   ) => Promise<AsyncIterableIterator<string>>;
+  abortRequest: (requestUUID: string) => void;
 }
 
 // Main interfaces

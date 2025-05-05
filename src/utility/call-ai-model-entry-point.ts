@@ -1,19 +1,31 @@
-import { MessagePortMain } from 'electron';
+import { UTILITY_MESSAGE_TYPES } from './messages.js';
 import {
-  LanguageModel,
   LanguageModelPromptRole,
   LanguageModelPromptType,
-  LanguageModelPromptOptions,
   LanguageModelPrompt,
-  InternalLanguageModelCreateOptions,
-} from '../language-model.js';
-import { UTILITY_MESSAGE_TYPES } from './messages.js';
+} from '../interfaces.js';
+import { LanguageModel } from '../language-model.js';
+import { AbortSignalUtilityManager } from './abortmanager.js';
+import {
+  isAbortMessage,
+  isLoadModelMessage,
+  isPromptMessage,
+  isStopMessage,
+  LoadModelMessage,
+  parseMessageEvent,
+  PromptMessage,
+} from './utility-type-helpers.js';
 
 let languageModel: LanguageModel;
+const abortSignalManager = new AbortSignalUtilityManager();
 
-async function loadModel(options: InternalLanguageModelCreateOptions) {
+async function loadModel(message: LoadModelMessage) {
   try {
-    languageModel = await LanguageModel.create(options);
+    const optionsWithSignal = abortSignalManager.getWithSignalFromCreateOptions(
+      message.data,
+    );
+
+    languageModel = await LanguageModel.create(optionsWithSignal);
   } catch (error) {
     console.error(error);
 
@@ -21,15 +33,14 @@ async function loadModel(options: InternalLanguageModelCreateOptions) {
       type: UTILITY_MESSAGE_TYPES.ERROR,
       data: error,
     });
+  } finally {
+    abortSignalManager.removeUUID(message.data.requestUUID);
   }
 }
 
-async function generateResponse(
-  prompt: string,
-  stream: boolean,
-  options?: LanguageModelPromptOptions,
-  port?: MessagePortMain,
-) {
+async function generateResponse(message: PromptMessage) {
+  const { port, data } = message;
+
   if (!languageModel) {
     if (port) {
       port.postMessage({ type: 'error', error: 'Language model not loaded.' });
@@ -37,42 +48,54 @@ async function generateResponse(
     return;
   }
 
-  const promptPayload = {
-    role: LanguageModelPromptRole.USER,
-    type: LanguageModelPromptType.TEXT,
-    content: prompt,
-  };
+  const options = abortSignalManager.getWithSignalFromPromptOptions(
+    data.options,
+  );
 
   try {
-    if (stream && port) {
+    // Format the prompt payload correctly for the language model
+    const promptPayload: LanguageModelPrompt = {
+      role: LanguageModelPromptRole.USER,
+      type: LanguageModelPromptType.TEXT,
+      content: data.input,
+    };
+
+    if (data.stream && message.port) {
+      // Stream response through the provided port
       const readable = languageModel.promptStreaming(promptPayload, options);
       const reader = readable.getReader();
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        port.postMessage({ type: 'chunk', chunk: value });
+        message.port.postMessage({
+          type: UTILITY_MESSAGE_TYPES.CHUNK,
+          chunk: value,
+        });
       }
 
-      port.postMessage({ type: 'done' });
-      port.close();
+      message.port.postMessage({ type: UTILITY_MESSAGE_TYPES.DONE });
     } else {
-      // Otherwise await the full response and post it
-      const value = await languageModel.prompt(promptPayload, options);
-
+      // Handle non-streaming case
       process.parentPort?.postMessage({
         type: UTILITY_MESSAGE_TYPES.DONE,
-        data: value,
+        data: await languageModel.prompt(promptPayload, options),
       });
     }
   } catch (error) {
-    if (port) {
-      port.postMessage({
+    if (message.port) {
+      message.port.postMessage({
         type: 'error',
         error: error instanceof Error ? error.message : String(error),
       });
-      port.close();
+    } else {
+      process.parentPort?.postMessage({
+        type: UTILITY_MESSAGE_TYPES.ERROR,
+        data: error,
+      });
     }
+  } finally {
+    // abortSignalManager.removeUUID(options.requestUUID);
   }
 }
 
@@ -89,58 +112,16 @@ function stopModel() {
   process.parentPort.emit('exit');
 }
 
-process.parentPort.on('message', async ({ data, ports }) => {
-  const [port] = ports || [];
+process.parentPort.on('message', async (messageEvent) => {
+  const message = parseMessageEvent(messageEvent);
 
-  if (data.type === UTILITY_MESSAGE_TYPES.LOAD_MODEL) {
-    await loadModel(data.data);
-  } else if (data.type === UTILITY_MESSAGE_TYPES.SEND_PROMPT) {
-    try {
-      // Format the prompt payload correctly for the language model
-      const promptPayload: LanguageModelPrompt = {
-        role: LanguageModelPromptRole.USER,
-        type: LanguageModelPromptType.TEXT,
-        content: data.data.input,
-      };
-
-      if (data.data.stream && port) {
-        // Stream response through the provided port
-        const readable = languageModel.promptStreaming(
-          promptPayload,
-          data.data.options,
-        );
-        const reader = readable.getReader();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          port.postMessage({ type: 'chunk', chunk: value });
-        }
-
-        port.postMessage({ type: 'done' });
-      } else {
-        // Handle non-streaming case
-        await generateResponse(
-          data.data.input,
-          data.data.stream,
-          data.data.options,
-          port,
-        );
-      }
-    } catch (error) {
-      if (port) {
-        port.postMessage({
-          type: 'error',
-          error: error instanceof Error ? error.message : String(error),
-        });
-      } else {
-        process.parentPort?.postMessage({
-          type: UTILITY_MESSAGE_TYPES.ERROR,
-          data: error,
-        });
-      }
-    }
-  } else if (data.type === UTILITY_MESSAGE_TYPES.STOP) {
+  if (isLoadModelMessage(message)) {
+    await loadModel(message);
+  } else if (isPromptMessage(message)) {
+    await generateResponse(message);
+  } else if (isStopMessage(message)) {
     stopModel();
+  } else if (isAbortMessage(message)) {
+    abortSignalManager.abortSignalForUUID(message.data.requestUUID);
   }
 });

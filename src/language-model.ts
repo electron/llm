@@ -3,46 +3,14 @@ import type {
   LlamaChatSession,
   LlamaModel,
 } from 'node-llama-cpp' with { 'resolution-mode': 'import' };
-
-export enum LanguageModelPromptRole {
-  SYSTEM = 'system',
-  USER = 'user',
-  ASSISTANT = 'assistant',
-}
-
-export enum LanguageModelPromptType {
-  TEXT = 'text',
-  IMAGE = 'image',
-  AUDIO = 'audio',
-}
-
-type LanguageModelPromptContent = string | ArrayBuffer;
-
-export interface LanguageModelPrompt {
-  role: LanguageModelPromptRole;
-  type: LanguageModelPromptType;
-  content: LanguageModelPromptContent;
-}
-
-export interface LanguageModelCreateOptions {
-  systemPrompt?: string;
-  initialPrompts?: LanguageModelPrompt[];
-  topK?: number;
-  temperature?: number;
-  signal?: AbortSignal;
-  modelAlias: string;
-}
-
-export interface InternalLanguageModelCreateOptions
-  extends LanguageModelCreateOptions {
-  modelPath: string;
-}
-
-export interface LanguageModelPromptOptions {
-  responseJSONSchema?: object;
-  signal?: AbortSignal;
-  timeout?: number;
-}
+import {
+  LanguageModelPrompt,
+  LanguageModelPromptType,
+  LanguageModelPromptRole,
+  LanguageModelPromptContent,
+  InternalLanguageModelCreateOptions,
+  InternalLanguageModelPromptOptions,
+} from './interfaces';
 
 interface LanguageModelParams {
   readonly defaultTopK: number;
@@ -82,7 +50,7 @@ export class LanguageModel {
   };
 
   private constructor(
-    options: LanguageModelCreateOptions,
+    options: InternalLanguageModelCreateOptions,
     model: LlamaModel,
     context: any,
     session: LlamaChatSession,
@@ -158,7 +126,7 @@ export class LanguageModel {
 
   async prompt(
     input: LanguageModelPrompt | LanguageModelPrompt[],
-    options?: LanguageModelPromptOptions,
+    options?: InternalLanguageModelPromptOptions,
   ): Promise<string> {
     if (!this.session) {
       process.parentPort?.postMessage({
@@ -179,6 +147,7 @@ export class LanguageModel {
     const response = await this.session.prompt(processedInput, {
       temperature: this.temperature,
       signal: options?.signal,
+      stopOnAbortSignal: true,
       topK: this.topK,
     });
 
@@ -187,7 +156,7 @@ export class LanguageModel {
 
   promptStreaming(
     input: LanguageModelPrompt | LanguageModelPrompt[],
-    options?: LanguageModelPromptOptions,
+    options?: InternalLanguageModelPromptOptions,
   ): ReadableStream<string> {
     if (!this.session) {
       process.parentPort.postMessage({
@@ -214,6 +183,7 @@ export class LanguageModel {
         await this.session!.prompt(processedInput, {
           temperature: this.temperature,
           signal: options?.signal,
+          stopOnAbortSignal: true,
           topK: this.topK,
 
           onTextChunk: (chunk: string) => {

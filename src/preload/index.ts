@@ -2,12 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import type {
   ElectronLlmRenderer,
-  RendererLoadFunction,
-} from '../interfaces.js';
-import type {
   LanguageModelCreateOptions,
   LanguageModelPromptOptions,
-} from '../language-model.js';
+  RendererLoadFunction,
+} from '../interfaces.js';
 
 /**
  * Validates the options for creating a language model.
@@ -52,13 +50,6 @@ function validateCreateOptions(options?: LanguageModelCreateOptions): void {
   ) {
     throw new TypeError('temperature must be a non-negative number');
   }
-
-  if (
-    options.signal !== undefined &&
-    !(options.signal instanceof AbortSignal)
-  ) {
-    throw new TypeError('signal must be an AbortSignal');
-  }
 }
 
 /**
@@ -76,18 +67,12 @@ function validatePromptOptions(options?: LanguageModelPromptOptions): void {
   ) {
     throw new TypeError('responseJSONSchema must be an object');
   }
-
-  if (
-    options.signal !== undefined &&
-    !(options.signal instanceof AbortSignal)
-  ) {
-    throw new TypeError('signal must be an AbortSignal');
-  }
 }
 
 const electronAi: ElectronLlmRenderer = {
   create: async (options?: LanguageModelCreateOptions): Promise<void> => {
     validateCreateOptions(options);
+
     return ipcRenderer.invoke('ELECTRON_LLM_CREATE', options);
   },
   destroy: async (): Promise<void> =>
@@ -97,7 +82,6 @@ const electronAi: ElectronLlmRenderer = {
     options?: LanguageModelPromptOptions,
   ): Promise<string> => {
     validatePromptOptions(options);
-
     return ipcRenderer.invoke('ELECTRON_LLM_PROMPT', input, options);
   },
   promptStreaming: async (
@@ -149,11 +133,11 @@ const electronAi: ElectronLlmRenderer = {
       });
 
       // Request streaming from main process
-      ipcRenderer.send('ELECTRON_LLM_PROMPT_STREAMING_REQUEST', {
-        input,
-        options,
-      });
+      ipcRenderer.send('ELECTRON_LLM_PROMPT_STREAMING_REQUEST', input, options);
     });
+  },
+  abortRequest(requestUUID: string): Promise<void> {
+    return ipcRenderer.invoke('ELECTRON_LLM_ABORT_REQUEST', { requestUUID });
   },
 };
 
