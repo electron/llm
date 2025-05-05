@@ -100,7 +100,8 @@ describe('Preload Interface', () => {
 
     expect(ipcRenderer.send).toHaveBeenCalledWith(
       IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING_REQUEST,
-      { input, options: undefined },
+      input,
+      undefined,
     );
     expect(mockPort.start).toHaveBeenCalled();
   });
