@@ -109,7 +109,7 @@ function stopModel() {
     data: 'Model session reset.',
   });
 
-  process.parentPort.emit('exit');
+  process.exit(0);
 }
 
 process.parentPort.on('message', async (messageEvent) => {
