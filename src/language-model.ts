@@ -1,47 +1,16 @@
 import type {
+  ChatHistoryItem,
   LlamaChatSession,
   LlamaModel,
 } from 'node-llama-cpp' with { 'resolution-mode': 'import' };
-
-export enum LanguageModelPromptRole {
-  SYSTEM = 'system',
-  USER = 'user',
-  ASSISTANT = 'assistant',
-}
-
-export enum LanguageModelPromptType {
-  TEXT = 'text',
-  IMAGE = 'image',
-  AUDIO = 'audio',
-}
-
-type LanguageModelPromptContent = string | ArrayBuffer;
-
-export interface LanguageModelPrompt {
-  role: LanguageModelPromptRole;
-  type: LanguageModelPromptType;
-  content: LanguageModelPromptContent;
-}
-
-export interface LanguageModelCreateOptions {
-  systemPrompt?: string;
-  initialPrompts?: LanguageModelPrompt[];
-  topK?: number;
-  temperature?: number;
-  signal?: AbortSignal;
-  modelAlias: string;
-}
-
-export interface InternalLanguageModelCreateOptions
-  extends LanguageModelCreateOptions {
-  modelPath: string;
-}
-
-export interface LanguageModelPromptOptions {
-  responseJSONSchema?: object;
-  signal?: AbortSignal;
-  timeout?: number;
-}
+import {
+  LanguageModelPrompt,
+  LanguageModelPromptType,
+  LanguageModelPromptRole,
+  LanguageModelPromptContent,
+  InternalLanguageModelCreateOptions,
+  InternalLanguageModelPromptOptions,
+} from './interfaces';
 
 interface LanguageModelParams {
   readonly defaultTopK: number;
@@ -81,7 +50,7 @@ export class LanguageModel {
   };
 
   private constructor(
-    options: LanguageModelCreateOptions,
+    options: InternalLanguageModelCreateOptions,
     model: LlamaModel,
     context: any,
     session: LlamaChatSession,
@@ -106,6 +75,12 @@ export class LanguageModel {
         contextSequence: context.getSequence(),
         systemPrompt: options.systemPrompt,
       });
+
+      if (options.initialPrompts && options.initialPrompts.length > 0) {
+        session.setChatHistory(
+          options.initialPrompts.map(this.initialPromptToChatHistoryItem),
+        );
+      }
 
       process.parentPort?.postMessage({
         type: 'modelLoaded',
@@ -151,7 +126,7 @@ export class LanguageModel {
 
   async prompt(
     input: LanguageModelPrompt | LanguageModelPrompt[],
-    options?: LanguageModelPromptOptions,
+    options?: InternalLanguageModelPromptOptions,
   ): Promise<string> {
     if (!this.session) {
       process.parentPort?.postMessage({
@@ -172,6 +147,7 @@ export class LanguageModel {
     const response = await this.session.prompt(processedInput, {
       temperature: this.temperature,
       signal: options?.signal,
+      stopOnAbortSignal: true,
       topK: this.topK,
     });
 
@@ -180,7 +156,7 @@ export class LanguageModel {
 
   promptStreaming(
     input: LanguageModelPrompt | LanguageModelPrompt[],
-    options?: LanguageModelPromptOptions,
+    options?: InternalLanguageModelPromptOptions,
   ): ReadableStream<string> {
     if (!this.session) {
       process.parentPort.postMessage({
@@ -207,6 +183,7 @@ export class LanguageModel {
         await this.session!.prompt(processedInput, {
           temperature: this.temperature,
           signal: options?.signal,
+          stopOnAbortSignal: true,
           topK: this.topK,
 
           onTextChunk: (chunk: string) => {
@@ -227,6 +204,33 @@ export class LanguageModel {
         "NotSupportedError: 'system' role is not allowed in prompt()",
       );
     }
+  }
+
+  private static initialPromptToChatHistoryItem(
+    prompt: LanguageModelPrompt,
+  ): ChatHistoryItem {
+    if (prompt.role === LanguageModelPromptRole.SYSTEM) {
+      return {
+        type: 'system',
+        text: prompt.content.toString(),
+      };
+    }
+
+    if (prompt.role === LanguageModelPromptRole.USER) {
+      return {
+        type: 'user',
+        text: prompt.content.toString(),
+      };
+    }
+
+    if (prompt.role === LanguageModelPromptRole.ASSISTANT) {
+      return {
+        type: 'model',
+        response: [prompt.content.toString()],
+      };
+    }
+
+    throw new Error('Invalid prompt role.');
   }
 
   destroy(): void {

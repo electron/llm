@@ -9,12 +9,13 @@ import path from 'node:path';
 import { deepEqual } from 'node:assert/strict';
 
 import { IpcRendererMessage } from '../common/ipc-channel-names.js';
+import { UTILITY_MESSAGE_TYPES } from '../utility/messages.js';
 import {
+  AiProcessSendPromptData,
+  GetModelPathFunction,
   LanguageModelCreateOptions,
   LanguageModelPromptOptions,
-} from '../language-model.js';
-import { UTILITY_MESSAGE_TYPES } from '../utility/messages.js';
-import { GetModelPathFunction } from '../interfaces.js';
+} from '../interfaces.js';
 
 let aiProcess: UtilityProcess | null = null;
 let aiProcessCreationOptions: LanguageModelCreateOptions | null = null;
@@ -80,6 +81,15 @@ export function registerAiHandlers({
       if (type === UTILITY_MESSAGE_TYPES.MODEL_LOADED) {
         return;
       } else if (type === UTILITY_MESSAGE_TYPES.ERROR) {
+        // Try to clean up
+        try {
+          await stopModel();
+        } catch (error) {
+          console.error(
+            `Failed to stop AI model process after error: ${(error as Error).message || 'Unknown error'}`,
+          );
+        }
+
         throw new Error(responseData);
       } else {
         throw new Error(`Unexpected message type: ${type}`);
@@ -96,9 +106,15 @@ export function registerAiHandlers({
         );
       }
 
+      const data: AiProcessSendPromptData = {
+        input,
+        stream: false,
+        options,
+      };
+
       aiProcess.postMessage({
         type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
-        data: { input, stream: false, options },
+        data,
       });
 
       const responsePromise = once(aiProcess, 'message').then(([msg]) => {
@@ -125,35 +141,8 @@ export function registerAiHandlers({
   );
 
   ipcMain.on(
-    IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING,
-    (_event, { input, options }, rendererPort) => {
-      if (!aiProcess) {
-        rendererPort.postMessage({
-          type: 'error',
-          error: 'AI model process not started.',
-        });
-        return;
-      }
-
-      const { port1: mainPort, port2: utilityPort } = new MessageChannelMain();
-
-      mainPort.on('message', (messageEvent) => {
-        rendererPort.postMessage(messageEvent.data);
-      });
-
-      aiProcess.postMessage(
-        {
-          type: UTILITY_MESSAGE_TYPES.SEND_PROMPT,
-          data: { input, stream: true, options },
-        },
-        [utilityPort],
-      );
-    },
-  );
-
-  ipcMain.on(
-    'ELECTRON_LLM_PROMPT_STREAMING_REQUEST',
-    (event, { input, options }) => {
+    IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING_REQUEST,
+    (event, input: string, options: LanguageModelPromptOptions) => {
       if (!aiProcess) {
         event.sender.send(
           'ELECTRON_LLM_PROMPT_STREAMING_ERROR',
@@ -194,6 +183,20 @@ export function registerAiHandlers({
         },
         [utilityPort2],
       );
+    },
+  );
+
+  ipcMain.handle(
+    IpcRendererMessage.ELECTRON_LLM_ABORT_REQUEST,
+    (_event, { requestUUID } = {}) => {
+      if (!aiProcess) {
+        return;
+      }
+
+      aiProcess.postMessage({
+        type: UTILITY_MESSAGE_TYPES.REQUEST_ABORTED,
+        data: { requestUUID },
+      });
     },
   );
 }
@@ -252,7 +255,7 @@ async function stopModel(): Promise<void> {
 }
 
 function shouldStartNewAiProcess(options: LanguageModelCreateOptions): boolean {
-  if (!aiProcess || !aiProcessCreationOptions) {
+  if (!aiProcess || !aiProcess.pid || !aiProcessCreationOptions) {
     return true;
   }
 
