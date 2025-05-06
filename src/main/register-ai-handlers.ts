@@ -81,6 +81,15 @@ export function registerAiHandlers({
       if (type === UTILITY_MESSAGE_TYPES.MODEL_LOADED) {
         return;
       } else if (type === UTILITY_MESSAGE_TYPES.ERROR) {
+        // Try to clean up
+        try {
+          await stopModel();
+        } catch (error) {
+          console.error(
+            `Failed to stop AI model process after error: ${(error as Error).message || 'Unknown error'}`,
+          );
+        }
+
         throw new Error(responseData);
       } else {
         throw new Error(`Unexpected message type: ${type}`);
@@ -246,7 +255,7 @@ async function stopModel(): Promise<void> {
 }
 
 function shouldStartNewAiProcess(options: LanguageModelCreateOptions): boolean {
-  if (!aiProcess || !aiProcessCreationOptions) {
+  if (!aiProcess || !aiProcess.pid || !aiProcessCreationOptions) {
     return true;
   }
 
