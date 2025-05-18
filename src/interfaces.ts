@@ -50,7 +50,7 @@ export interface InternalLanguageModelPromptOptions
 export type AiProcessModelCreateData = InternalLanguageModelCreateOptions;
 
 export interface AiProcessSendPromptData {
-  options: LanguageModelPromptOptions;
+  options?: LanguageModelPromptOptions;
   stream?: boolean;
   input: string;
 }

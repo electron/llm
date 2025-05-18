@@ -99,7 +99,7 @@ export function registerAiHandlers({
 
   ipcMain.handle(
     IpcRendererMessage.ELECTRON_LLM_PROMPT,
-    async (_event, input: string, options: LanguageModelPromptOptions) => {
+    async (_event, input: string, options?: LanguageModelPromptOptions) => {
       if (!aiProcess) {
         throw new Error(
           'AI model process not started. Please do so with `electronAi.create()`',
@@ -132,7 +132,7 @@ export function registerAiHandlers({
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(
           () => reject(new Error('Prompt response timed out.')),
-          options.timeout || 20000,
+          options?.timeout || 20000,
         );
       });
 
@@ -142,7 +142,7 @@ export function registerAiHandlers({
 
   ipcMain.on(
     IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING_REQUEST,
-    (event, input: string, options: LanguageModelPromptOptions) => {
+    (event, input: string, options?: LanguageModelPromptOptions) => {
       if (!aiProcess) {
         event.sender.send(
           'ELECTRON_LLM_PROMPT_STREAMING_ERROR',
