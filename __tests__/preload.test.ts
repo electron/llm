@@ -59,6 +59,16 @@ describe('Preload Interface', () => {
     );
   });
 
+  it('prompt should invoke without options', async () => {
+    const input = 'Test prompt';
+    await (globalThis as any).electronAi.prompt(input);
+    expect(ipcRenderer.invoke).toHaveBeenCalledWith(
+      IpcRendererMessage.ELECTRON_LLM_PROMPT,
+      input,
+      undefined,
+    );
+  });
+
   it('promptStreaming should invoke with correct params', async () => {
     const input = 'Test prompt for streaming';
 
