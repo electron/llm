@@ -48,9 +48,9 @@ async function generateResponse(message: PromptMessage) {
     return;
   }
 
-  const options = abortSignalManager.getWithSignalFromPromptOptions(
-    data.options,
-  );
+  const options =
+    data.options &&
+    abortSignalManager.getWithSignalFromPromptOptions(data.options);
 
   try {
     // Format the prompt payload correctly for the language model
