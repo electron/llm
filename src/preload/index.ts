@@ -142,7 +142,20 @@ const electronAi: ElectronLlmRenderer = {
 };
 
 export const loadElectronLlm: RendererLoadFunction = async () => {
-  contextBridge.exposeInMainWorld('electronAi', electronAi);
+  try {
+    // Check if contextBridge is available (context isolation is enabled)
+    if (process.contextIsolated) {
+      // Use contextBridge when context isolation is on
+      contextBridge.exposeInMainWorld('electronAi', electronAi);
+    } else {
+      // When context isolation is off, add directly to window global
+      window.electronAi = electronAi;
+    }
+  } catch (error) {
+    // Fallback in case of any errors
+    console.error('Error exposing electronAi API:', error);
+    window.electronAi = electronAi;
+  }
 };
 
 loadElectronLlm();
