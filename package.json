@@ -68,7 +68,7 @@
     "node-llama-cpp": "^3.7.0"
   },
   "devDependencies": {
-    "@electron/rebuild": "^3.7.1",
+    "@electron/rebuild": "^4.0.3",
     "@tsconfig/node22": "^22.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "electron": "^39.8.4",
