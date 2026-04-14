@@ -1,10 +1,4 @@
-export type ProcessType =
-  | 'main'
-  | 'renderer'
-  | 'preload'
-  | 'utility'
-  | 'worker'
-  | 'unknown';
+export type ProcessType = 'main' | 'renderer' | 'preload' | 'utility' | 'worker' | 'unknown';
 
 /**
  * Returns the current Electron process type
@@ -49,7 +43,7 @@ async function isContextIsolatedPreload() {
     const electron = await import('electron');
 
     return !!electron.contextBridge;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

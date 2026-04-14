@@ -1,9 +1,5 @@
 import { getProcessType } from './helpers/get-process-type.js';
-import {
-  MainLoadFunction,
-  LoadOptions,
-  RendererLoadFunction,
-} from './interfaces.js';
+import { MainLoadFunction, LoadOptions, RendererLoadFunction } from './interfaces.js';
 
 export * from './interfaces.js';
 export * from './constants.js';

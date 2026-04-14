@@ -4,6 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "nodenext",
     "sourceMap": true,
+    "rootDir": "src",
     "outDir": "dist",
     "types": ["node", "electron"],
     "declaration": true,
@@ -11,7 +12,7 @@
     "esModuleInterop": true,
     "strict": true,
     "skipLibCheck": true,
-    "lib": ["ES2021", "DOM"],
+    "lib": ["ES2021", "DOM"]
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

@@ -1,8 +1,6 @@
-import type {
-  ChatHistoryItem,
-  LlamaChatSession,
-  LlamaModel,
-} from 'node-llama-cpp' with { 'resolution-mode': 'import' };
+import type { ChatHistoryItem, LlamaChatSession, LlamaModel } from 'node-llama-cpp' with {
+  'resolution-mode': 'import',
+};
 import {
   LanguageModelPrompt,
   LanguageModelPromptType,
@@ -24,7 +22,6 @@ interface AIAvailability {
   reason?: string;
 }
 
-// prettier-ignore
 let _llamaCpp: typeof import('node-llama-cpp', { with: { 'resolution-mode': 'import' } });
 async function getLlamaCpp() {
   if (!_llamaCpp) {
@@ -63,34 +60,26 @@ export class LanguageModel {
     this.session = session;
   }
 
-  static async create(
-    options: InternalLanguageModelCreateOptions,
-  ): Promise<LanguageModel> {
-    try {
-      const llamaCpp = await getLlamaCpp();
-      const llama = await llamaCpp.getLlama();
-      const model = await llama.loadModel({ modelPath: options.modelPath });
-      const context = await model.createContext();
-      const session = new llamaCpp.LlamaChatSession({
-        contextSequence: context.getSequence(),
-        systemPrompt: options.systemPrompt,
-      });
+  static async create(options: InternalLanguageModelCreateOptions): Promise<LanguageModel> {
+    const llamaCpp = await getLlamaCpp();
+    const llama = await llamaCpp.getLlama();
+    const model = await llama.loadModel({ modelPath: options.modelPath });
+    const context = await model.createContext();
+    const session = new llamaCpp.LlamaChatSession({
+      contextSequence: context.getSequence(),
+      systemPrompt: options.systemPrompt,
+    });
 
-      if (options.initialPrompts && options.initialPrompts.length > 0) {
-        session.setChatHistory(
-          options.initialPrompts.map(this.initialPromptToChatHistoryItem),
-        );
-      }
-
-      process.parentPort?.postMessage({
-        type: 'modelLoaded',
-        data: 'Model loaded successfully.',
-      });
-
-      return new LanguageModel(options, model, context, session);
-    } catch (error) {
-      throw error;
+    if (options.initialPrompts && options.initialPrompts.length > 0) {
+      session.setChatHistory(options.initialPrompts.map(this.initialPromptToChatHistoryItem));
     }
+
+    process.parentPort?.postMessage({
+      type: 'modelLoaded',
+      data: 'Model loaded successfully.',
+    });
+
+    return new LanguageModel(options, model, context, session);
   }
 
   static async availability(): Promise<AIAvailability> {
@@ -140,9 +129,7 @@ export class LanguageModel {
     const prompts = Array.isArray(input) ? input : [input];
     prompts.forEach(this.validatePrompt);
 
-    const processedInput = prompts
-      .map((p) => this.parseContent(p.content))
-      .join('\n');
+    const processedInput = prompts.map((p) => this.parseContent(p.content)).join('\n');
 
     const response = await this.session.prompt(processedInput, {
       temperature: this.temperature,
@@ -170,13 +157,9 @@ export class LanguageModel {
     prompts.forEach(this.validatePrompt);
 
     if (prompts[0].type !== LanguageModelPromptType.TEXT) {
-      throw new Error(
-        'NotSupportedError: Only text prompts are supported for streaming',
-      );
+      throw new Error('NotSupportedError: Only text prompts are supported for streaming');
     }
-    const processedInput = prompts
-      .map((p) => this.parseContent(p.content))
-      .join('\n');
+    const processedInput = prompts.map((p) => this.parseContent(p.content)).join('\n');
 
     return new ReadableStream({
       start: async (controller) => {
@@ -200,15 +183,11 @@ export class LanguageModel {
 
   private validatePrompt(prompt: LanguageModelPrompt) {
     if (prompt.role === LanguageModelPromptRole.SYSTEM) {
-      throw new Error(
-        "NotSupportedError: 'system' role is not allowed in prompt()",
-      );
+      throw new Error("NotSupportedError: 'system' role is not allowed in prompt()");
     }
   }
 
-  private static initialPromptToChatHistoryItem(
-    prompt: LanguageModelPrompt,
-  ): ChatHistoryItem {
+  private static initialPromptToChatHistoryItem(prompt: LanguageModelPrompt): ChatHistoryItem {
     if (prompt.role === LanguageModelPromptRole.SYSTEM) {
       return {
         type: 'system',

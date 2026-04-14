@@ -43,9 +43,7 @@ describe('Preload Interface', () => {
 
   it('destroy should invoke with correct ipcMessage', async () => {
     await (globalThis as any).electronAi.destroy();
-    expect(ipcRenderer.invoke).toHaveBeenCalledWith(
-      IpcRendererMessage.ELECTRON_LLM_DESTROY,
-    );
+    expect(ipcRenderer.invoke).toHaveBeenCalledWith(IpcRendererMessage.ELECTRON_LLM_DESTROY);
   });
 
   it('prompt should invoke with correct params', async () => {

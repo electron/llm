@@ -37,3 +37,4 @@ ts-gen
 out/
 end-to-end/dist
 .yarn/install-state.gz
+tsconfig.tsbuildinfo

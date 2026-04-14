@@ -1,7 +1,4 @@
-import {
-  AiProcessModelCreateData,
-  AiProcessSendPromptData,
-} from '../interfaces';
+import { AiProcessModelCreateData, AiProcessSendPromptData } from '../interfaces';
 import { UTILITY_MESSAGE_TYPES } from './messages';
 
 export interface UnknownMessage {
@@ -34,21 +31,15 @@ function isMessage(message: unknown): message is UnknownMessage {
   return typeof message === 'object' && message !== null && 'type' in message;
 }
 
-export function isLoadModelMessage(
-  message: unknown,
-): message is LoadModelMessage {
+export function isLoadModelMessage(message: unknown): message is LoadModelMessage {
   return (
-    isMessage(message) &&
-    message.type === UTILITY_MESSAGE_TYPES.LOAD_MODEL &&
-    'data' in message
+    isMessage(message) && message.type === UTILITY_MESSAGE_TYPES.LOAD_MODEL && 'data' in message
   );
 }
 
 export function isPromptMessage(message: unknown): message is PromptMessage {
   return (
-    isMessage(message) &&
-    message.type === UTILITY_MESSAGE_TYPES.SEND_PROMPT &&
-    'data' in message
+    isMessage(message) && message.type === UTILITY_MESSAGE_TYPES.SEND_PROMPT && 'data' in message
   );
 }
 

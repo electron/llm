@@ -1,7 +1,6 @@
 import {
   InternalLanguageModelCreateOptions,
   InternalLanguageModelPromptOptions,
-  LanguageModelCreateOptions,
   LanguageModelPromptOptions,
 } from '../interfaces';
 

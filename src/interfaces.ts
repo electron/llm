@@ -30,8 +30,7 @@ export interface LanguageModelCreateOptions {
   modelAlias: string;
 }
 
-export interface InternalLanguageModelCreateOptions
-  extends LanguageModelCreateOptions {
+export interface InternalLanguageModelCreateOptions extends LanguageModelCreateOptions {
   modelPath: string;
   signal?: AbortSignal;
 }
@@ -42,8 +41,7 @@ export interface LanguageModelPromptOptions {
   timeout?: number;
 }
 
-export interface InternalLanguageModelPromptOptions
-  extends LanguageModelPromptOptions {
+export interface InternalLanguageModelPromptOptions extends LanguageModelPromptOptions {
   signal?: AbortSignal;
 }
 
@@ -59,10 +57,7 @@ export interface AiProcessSendPromptData {
 export interface ElectronLlmRenderer {
   create: (options: LanguageModelCreateOptions) => Promise<void>;
   destroy: () => Promise<void>;
-  prompt: (
-    input: string,
-    options?: LanguageModelPromptOptions,
-  ) => Promise<string>;
+  prompt: (input: string, options?: LanguageModelPromptOptions) => Promise<string>;
   promptStreaming: (
     input: string,
     options?: LanguageModelPromptOptions,
@@ -84,6 +79,4 @@ export type ElectronAi = ElectronLlmRenderer;
 export type MainLoadFunction = (options?: LoadOptions) => Promise<void>;
 export type RendererLoadFunction = () => Promise<void>;
 
-export type GetModelPathFunction = (
-  modelAlias: string,
-) => Promise<string | null> | string | null;
+export type GetModelPathFunction = (modelAlias: string) => Promise<string | null> | string | null;

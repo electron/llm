@@ -21,9 +21,7 @@ const abortSignalManager = new AbortSignalUtilityManager();
 
 async function loadModel(message: LoadModelMessage) {
   try {
-    const optionsWithSignal = abortSignalManager.getWithSignalFromCreateOptions(
-      message.data,
-    );
+    const optionsWithSignal = abortSignalManager.getWithSignalFromCreateOptions(message.data);
 
     languageModel = await LanguageModel.create(optionsWithSignal);
   } catch (error) {
@@ -48,9 +46,7 @@ async function generateResponse(message: PromptMessage) {
     return;
   }
 
-  const options = abortSignalManager.getWithSignalFromPromptOptions(
-    data.options,
-  );
+  const options = abortSignalManager.getWithSignalFromPromptOptions(data.options);
 
   try {
     // Format the prompt payload correctly for the language model
