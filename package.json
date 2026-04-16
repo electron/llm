@@ -31,8 +31,8 @@
   },
   "scripts": {
     "tsc": "tsc --build",
-    "lint:check": "prettier --check \"**/*.{ts,js}\"",
-    "lint:fix": "prettier --write \"**/*.{ts,js}\"",
+    "lint": "oxfmt --check . && oxlint",
+    "lint:fix": "oxfmt --write . && oxlint --fix",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -45,7 +45,11 @@
   },
   "lint-staged": {
     "*.{js,ts}": [
-      "prettier --write"
+      "oxfmt --write",
+      "oxlint --fix"
+    ],
+    "*.{json,html}": [
+      "oxfmt --write"
     ]
   },
   "author": "Electron Community",
@@ -72,11 +76,12 @@
     "@tsconfig/node22": "^22.0.0",
     "@vitest/coverage-v8": "^4.0.18",
     "electron": "^39.8.4",
-    "eslint": "^8.57.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "prettier": "^3.5.2",
-    "typescript": "^5.7.3",
+    "oxfmt": "^0.44.0",
+    "oxlint": "^1.59.0",
+    "oxlint-tsgolint": "^0.20.0",
+    "typescript": "^6.0.2",
     "vitest": "^4.0.18"
   },
   "packageManager": "yarn@4.10.3+sha512.c38cafb5c7bb273f3926d04e55e1d8c9dfa7d9c3ea1f36a4868fa028b9e5f72298f0b7f401ad5eb921749eb012eb1c3bb74bf7503df3ee43fd600d14a018266f",

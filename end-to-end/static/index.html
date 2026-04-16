@@ -1,209 +1,224 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Chat Interface</title>
-  <style>
-    /* Base styles */
-    body {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-
-    /* Form styles */
-    .config-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      margin: 1.5rem 0;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    /* Input styles */
-    input, textarea {
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-    }
-
-    button {
-      padding: 0.5rem 1rem;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    /* Chat styles */
-    .chat-container {
-      display: none;
-      margin-top: 1.5rem;
-    }
-
-    .chat-messages {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      height: 500px;
-      overflow-y: auto;
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .message {
-      margin: 0.75rem 0;
-      padding: 0.75rem;
-      border-radius: 8px;
-      max-width: 80%;
-    }
-
-    .user-message {
-      background-color: #e3f2fd;
-      margin-left: auto;
-    }
-
-    .model-message {
-      background-color: #f5f5f5;
-      margin-right: auto;
-    }
-
-    .chat-input {
-      display: flex;
-      gap: 1rem;
-      align-items: flex-start;
-    }
-
-    .chat-input textarea {
-      flex-grow: 1;
-      resize: vertical;
-      min-height: 60px;
-    }
-  </style>
-</head>
-<body>
-  <h1>@electron/llm</h1>
-
-  <div class="config-form">
-    <div class="form-group">
-      <label for="modelFile">Model File:</label>
-      <input type="file" id="modelFile" accept=".bin,.gguf">
-    </div>
-
-    <div class="form-group">
-      <label for="systemPrompt">System Prompt:</label>
-      <textarea id="systemPrompt" rows="3" placeholder="Enter system prompt..."></textarea>
-    </div>
-
-    <div class="form-group">
-      <label for="initialPrompts">Initial Prompts:</label>
-      <textarea id="initialPrompts" rows="5" placeholder="Enter one prompt per line..."></textarea>
-    </div>
-
-    <div class="form-group">
-      <label for="topK">Top K:</label>
-      <input type="number" id="topK" value="40" min="1" max="100">
-    </div>
-
-    <div class="form-group">
-      <label for="temperature">Temperature:</label>
-      <input type="number" id="temperature" step="0.1" value="0.8" min="0" max="2">
-    </div>
-
-    <button onclick="loadModel()">Load Model</button>
-  </div>
-
-  <div class="chat-container" id="chatContainer">
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-input">
-      <textarea
-        id="userInput"
-        placeholder="Type your message here... (Press Enter to send)"
-        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }"></textarea>
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
-
-  <script type="module">
-    const createMessageElement = (content, type) => {
-      const messageDiv = document.createElement('div');
-      messageDiv.className = `message ${type}-message`;
-
-      const strong = document.createElement('strong');
-      strong.textContent = type === 'user' ? 'You' : 'Model';
-
-      messageDiv.appendChild(strong);
-      messageDiv.appendChild(document.createTextNode(': '));
-      messageDiv.appendChild(document.createTextNode(content));
-
-      return messageDiv;
-    };
-
-    window.loadModel = async () => {
-      const modelFile = document.getElementById('modelFile').files[0];
-      if (!modelFile) {
-        alert('Please select a model file');
-        return;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Chat Interface</title>
+    <style>
+      /* Base styles */
+      body {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
       }
 
-      const config = {
-        modelPath: await window.electron.getPathForFile(modelFile),
-        systemPrompt: document.getElementById('systemPrompt').value.trim() || undefined,
-        initialPrompts: document.getElementById('initialPrompts').value
-          .split('\n')
-          .filter(text => text.trim())
-          .map(text => ({ role: 'user', content: text })),
-        topK: parseInt(document.getElementById('topK').value),
-        temperature: parseFloat(document.getElementById('temperature').value)
+      /* Form styles */
+      .config-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      /* Input styles */
+      input,
+      textarea {
+        padding: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 1rem;
+      }
+
+      button {
+        padding: 0.5rem 1rem;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      /* Chat styles */
+      .chat-container {
+        display: none;
+        margin-top: 1.5rem;
+      }
+
+      .chat-messages {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        height: 500px;
+        overflow-y: auto;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .message {
+        margin: 0.75rem 0;
+        padding: 0.75rem;
+        border-radius: 8px;
+        max-width: 80%;
+      }
+
+      .user-message {
+        background-color: #e3f2fd;
+        margin-left: auto;
+      }
+
+      .model-message {
+        background-color: #f5f5f5;
+        margin-right: auto;
+      }
+
+      .chat-input {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+
+      .chat-input textarea {
+        flex-grow: 1;
+        resize: vertical;
+        min-height: 60px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>@electron/llm</h1>
+
+    <div class="config-form">
+      <div class="form-group">
+        <label for="modelFile">Model File:</label>
+        <input type="file" id="modelFile" accept=".bin,.gguf" />
+      </div>
+
+      <div class="form-group">
+        <label for="systemPrompt">System Prompt:</label>
+        <textarea id="systemPrompt" rows="3" placeholder="Enter system prompt..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="initialPrompts">Initial Prompts:</label>
+        <textarea
+          id="initialPrompts"
+          rows="5"
+          placeholder="Enter one prompt per line..."
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="topK">Top K:</label>
+        <input type="number" id="topK" value="40" min="1" max="100" />
+      </div>
+
+      <div class="form-group">
+        <label for="temperature">Temperature:</label>
+        <input type="number" id="temperature" step="0.1" value="0.8" min="0" max="2" />
+      </div>
+
+      <button onclick="loadModel()">Load Model</button>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input">
+        <textarea
+          id="userInput"
+          placeholder="Type your message here... (Press Enter to send)"
+          onkeydown="
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              sendMessage();
+            }
+          "
+        ></textarea>
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+    <script type="module">
+      const createMessageElement = (content, type) => {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${type}-message`;
+
+        const strong = document.createElement('strong');
+        strong.textContent = type === 'user' ? 'You' : 'Model';
+
+        messageDiv.appendChild(strong);
+        messageDiv.appendChild(document.createTextNode(': '));
+        messageDiv.appendChild(document.createTextNode(content));
+
+        return messageDiv;
       };
 
-      try {
-        await window.electronAi.create(config);
-        document.querySelector('.config-form').style.display = 'none';
-        document.getElementById('chatContainer').style.display = 'block';
-      } catch (error) {
-        console.error('Error loading model:', error);
-        alert(`Error loading model: ${error.message}`);
-      }
-    };
-
-    window.sendMessage = async () => {
-      const userInput = document.getElementById('userInput');
-      const messagesContainer = document.getElementById('chatMessages');
-      const message = userInput.value.trim();
-
-      if (!message) return;
-
-      messagesContainer.appendChild(createMessageElement(message, 'user'));
-      userInput.value = '';
-
-      try {
-        const modelMessage = createMessageElement('', 'model');
-        messagesContainer.appendChild(modelMessage);
-
-        const stream = await window.electronAi.promptStreaming(message);
-        for await (const chunk of stream) {
-          modelMessage.textContent = 'Model: ' + (modelMessage.textContent.slice(7) + chunk);
-          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      window.loadModel = async () => {
+        const modelFile = document.getElementById('modelFile').files[0];
+        if (!modelFile) {
+          alert('Please select a model file');
+          return;
         }
-      } catch (error) {
-        console.error('Error getting response:', error);
-        alert(`Error getting response: ${error.message}`);
-      }
-    };
-  </script>
-</body>
+
+        const config = {
+          modelPath: await window.electron.getPathForFile(modelFile),
+          systemPrompt: document.getElementById('systemPrompt').value.trim() || undefined,
+          initialPrompts: document
+            .getElementById('initialPrompts')
+            .value.split('\n')
+            .filter((text) => text.trim())
+            .map((text) => ({ role: 'user', content: text })),
+          topK: parseInt(document.getElementById('topK').value),
+          temperature: parseFloat(document.getElementById('temperature').value),
+        };
+
+        try {
+          await window.electronAi.create(config);
+          document.querySelector('.config-form').style.display = 'none';
+          document.getElementById('chatContainer').style.display = 'block';
+        } catch (error) {
+          console.error('Error loading model:', error);
+          alert(`Error loading model: ${error.message}`);
+        }
+      };
+
+      window.sendMessage = async () => {
+        const userInput = document.getElementById('userInput');
+        const messagesContainer = document.getElementById('chatMessages');
+        const message = userInput.value.trim();
+
+        if (!message) return;
+
+        messagesContainer.appendChild(createMessageElement(message, 'user'));
+        userInput.value = '';
+
+        try {
+          const modelMessage = createMessageElement('', 'model');
+          messagesContainer.appendChild(modelMessage);
+
+          const stream = await window.electronAi.promptStreaming(message);
+          for await (const chunk of stream) {
+            modelMessage.textContent = 'Model: ' + (modelMessage.textContent.slice(7) + chunk);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        } catch (error) {
+          console.error('Error getting response:', error);
+          alert(`Error getting response: ${error.message}`);
+        }
+      };
+    </script>
+  </body>
 </html>

@@ -1,15 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { LanguageModel } from '../src/language-model.js';
-import {
-  LanguageModelPromptRole,
-  LanguageModelPromptType,
-} from '../src/interfaces.js';
+import { LanguageModelPromptRole, LanguageModelPromptType } from '../src/interfaces.js';
 
 vi.mock('node-llama-cpp', () => {
   return {
     getLlama: async () => {
       return {
-        loadModel: async ({ modelPath }: { modelPath: string }) => {
+        loadModel: async ({ modelPath: _modelPath }: { modelPath: string }) => {
           return {
             createContext: async () => {
               return {
@@ -25,7 +22,7 @@ vi.mock('node-llama-cpp', () => {
       constructor({ contextSequence }: { contextSequence: string }) {
         this.contextSequence = contextSequence;
       }
-      async prompt(input: string, options?: any): Promise<string> {
+      async prompt(input: string, _options?: any): Promise<string> {
         return `Mocked response to: ${input}`;
       }
     },
@@ -66,7 +63,7 @@ describe('LanguageModel with mocks', () => {
     };
 
     // mock streaming behaviour
-    model.promptStreaming = (payload, options) => {
+    model.promptStreaming = (_payload, _options) => {
       return new ReadableStream({
         start(controller) {
           controller.enqueue('chunk1 ');
@@ -100,8 +97,6 @@ describe('LanguageModel with mocks', () => {
       content: 'This should fail.',
     };
 
-    await expect(model.prompt(promptPayload)).rejects.toThrow(
-      'NotSupportedError',
-    );
+    await expect(model.prompt(promptPayload)).rejects.toThrow('NotSupportedError');
   });
 });

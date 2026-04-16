@@ -16,31 +16,19 @@ import type {
 function validateCreateOptions(options?: LanguageModelCreateOptions): void {
   if (!options) return;
 
-  if (
-    options.modelAlias === undefined ||
-    typeof options.modelAlias !== 'string'
-  ) {
+  if (options.modelAlias === undefined || typeof options.modelAlias !== 'string') {
     throw new TypeError('modelAlias is required and must be a string');
   }
 
-  if (
-    options.systemPrompt !== undefined &&
-    typeof options.systemPrompt !== 'string'
-  ) {
+  if (options.systemPrompt !== undefined && typeof options.systemPrompt !== 'string') {
     throw new TypeError('systemPrompt must be a string');
   }
 
-  if (
-    options.initialPrompts !== undefined &&
-    !Array.isArray(options.initialPrompts)
-  ) {
+  if (options.initialPrompts !== undefined && !Array.isArray(options.initialPrompts)) {
     throw new TypeError('initialPrompts must be an array');
   }
 
-  if (
-    options.topK !== undefined &&
-    (typeof options.topK !== 'number' || options.topK <= 0)
-  ) {
+  if (options.topK !== undefined && (typeof options.topK !== 'number' || options.topK <= 0)) {
     throw new TypeError('topK must be a positive number');
   }
 
@@ -61,10 +49,7 @@ function validateCreateOptions(options?: LanguageModelCreateOptions): void {
 function validatePromptOptions(options?: LanguageModelPromptOptions): void {
   if (!options) return;
 
-  if (
-    options.responseJSONSchema !== undefined &&
-    typeof options.responseJSONSchema !== 'object'
-  ) {
+  if (options.responseJSONSchema !== undefined && typeof options.responseJSONSchema !== 'object') {
     throw new TypeError('responseJSONSchema must be an object');
   }
 }
@@ -75,12 +60,8 @@ const electronAi: ElectronLlmRenderer = {
 
     return ipcRenderer.invoke('ELECTRON_LLM_CREATE', options);
   },
-  destroy: async (): Promise<void> =>
-    ipcRenderer.invoke('ELECTRON_LLM_DESTROY'),
-  prompt: async (
-    input: string = '',
-    options?: LanguageModelPromptOptions,
-  ): Promise<string> => {
+  destroy: async (): Promise<void> => ipcRenderer.invoke('ELECTRON_LLM_DESTROY'),
+  prompt: async (input: string = '', options?: LanguageModelPromptOptions): Promise<string> => {
     validatePromptOptions(options);
     return ipcRenderer.invoke('ELECTRON_LLM_PROMPT', input, options);
   },
@@ -101,19 +82,17 @@ const electronAi: ElectronLlmRenderer = {
 
         const iterator: AsyncIterableIterator<string> = {
           async next(): Promise<IteratorResult<string, any>> {
-            const message = await new Promise<IteratorResult<string, any>>(
-              (resolve, reject) => {
-                port.onmessage = (event) => {
-                  if (event.data.type === 'error') {
-                    reject(new Error(event.data.error));
-                  } else if (event.data.type === 'done') {
-                    resolve({ done: true, value: undefined });
-                  } else {
-                    resolve({ value: event.data.chunk, done: false });
-                  }
-                };
-              },
-            );
+            const message = await new Promise<IteratorResult<string, any>>((resolve, reject) => {
+              port.onmessage = (event) => {
+                if (event.data.type === 'error') {
+                  reject(new Error(event.data.error));
+                } else if (event.data.type === 'done') {
+                  resolve({ done: true, value: undefined });
+                } else {
+                  resolve({ value: event.data.chunk, done: false });
+                }
+              };
+            });
             return message;
           },
           async return() {

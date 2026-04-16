@@ -1,9 +1,4 @@
-import {
-  ipcMain,
-  utilityProcess,
-  UtilityProcess,
-  MessageChannelMain,
-} from 'electron';
+import { ipcMain, utilityProcess, UtilityProcess, MessageChannelMain } from 'electron';
 import { once } from 'node:events';
 import path from 'node:path';
 import { deepEqual } from 'node:assert/strict';
@@ -24,9 +19,7 @@ export interface RegisterAiHandlersOptions {
   getModelPath: GetModelPathFunction;
 }
 
-export function registerAiHandlers({
-  getModelPath,
-}: RegisterAiHandlersOptions) {
+export function registerAiHandlers({ getModelPath }: RegisterAiHandlersOptions) {
   ipcMain.handle(IpcRendererMessage.ELECTRON_LLM_DESTROY, () => stopModel());
 
   ipcMain.handle(
@@ -68,10 +61,7 @@ export function registerAiHandlers({
       });
 
       const timeoutPromise = new Promise<any>((_, reject) => {
-        setTimeout(
-          () => reject(new Error('AI model process start timed out.')),
-          60000,
-        );
+        setTimeout(() => reject(new Error('AI model process start timed out.')), 60000);
       });
 
       // Give the AI model process 60 seconds to load the model
@@ -101,9 +91,7 @@ export function registerAiHandlers({
     IpcRendererMessage.ELECTRON_LLM_PROMPT,
     async (_event, input: string, options: LanguageModelPromptOptions) => {
       if (!aiProcess) {
-        throw new Error(
-          'AI model process not started. Please do so with `electronAi.create()`',
-        );
+        throw new Error('AI model process not started. Please do so with `electronAi.create()`');
       }
 
       const data: AiProcessSendPromptData = {
@@ -130,10 +118,7 @@ export function registerAiHandlers({
 
       // Set a timeout in case the child process doesn't reply.
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(
-          () => reject(new Error('Prompt response timed out.')),
-          options.timeout || 20000,
-        );
+        setTimeout(() => reject(new Error('Prompt response timed out.')), options.timeout || 20000);
       });
 
       return await Promise.race([responsePromise, timeoutPromise]);
@@ -144,18 +129,13 @@ export function registerAiHandlers({
     IpcRendererMessage.ELECTRON_LLM_PROMPT_STREAMING_REQUEST,
     (event, input: string, options: LanguageModelPromptOptions) => {
       if (!aiProcess) {
-        event.sender.send(
-          'ELECTRON_LLM_PROMPT_STREAMING_ERROR',
-          'AI model process not started.',
-        );
+        event.sender.send('ELECTRON_LLM_PROMPT_STREAMING_ERROR', 'AI model process not started.');
         return;
       }
 
       // Create two message channels
-      const { port1: rendererPort1, port2: rendererPort2 } =
-        new MessageChannelMain();
-      const { port1: utilityPort1, port2: utilityPort2 } =
-        new MessageChannelMain();
+      const { port1: rendererPort1, port2: rendererPort2 } = new MessageChannelMain();
+      const { port1: utilityPort1, port2: utilityPort2 } = new MessageChannelMain();
 
       // Connect the two ports directly
       rendererPort1.on('message', (event) => {
@@ -171,9 +151,7 @@ export function registerAiHandlers({
       utilityPort1.start();
 
       // Send one port to the renderer
-      event.sender.postMessage('ELECTRON_LLM_PROMPT_STREAMING_PORT', null, [
-        rendererPort2,
-      ]);
+      event.sender.postMessage('ELECTRON_LLM_PROMPT_STREAMING_PORT', null, [rendererPort2]);
 
       // Send the other port to the utility process
       aiProcess.postMessage(
@@ -186,26 +164,20 @@ export function registerAiHandlers({
     },
   );
 
-  ipcMain.handle(
-    IpcRendererMessage.ELECTRON_LLM_ABORT_REQUEST,
-    (_event, { requestUUID } = {}) => {
-      if (!aiProcess) {
-        return;
-      }
+  ipcMain.handle(IpcRendererMessage.ELECTRON_LLM_ABORT_REQUEST, (_event, { requestUUID } = {}) => {
+    if (!aiProcess) {
+      return;
+    }
 
-      aiProcess.postMessage({
-        type: UTILITY_MESSAGE_TYPES.REQUEST_ABORTED,
-        data: { requestUUID },
-      });
-    },
-  );
+    aiProcess.postMessage({
+      type: UTILITY_MESSAGE_TYPES.REQUEST_ABORTED,
+      data: { requestUUID },
+    });
+  });
 }
 
 export async function startAiModel(): Promise<UtilityProcess> {
-  const utilityScriptPath = path.join(
-    __dirname,
-    '../utility/call-ai-model-entry-point.js',
-  );
+  const utilityScriptPath = path.join(__dirname, '../utility/call-ai-model-entry-point.js');
 
   const aiProcess = utilityProcess.fork(utilityScriptPath, [], {
     stdio: ['ignore', 'pipe', 'pipe', 'pipe'],
@@ -246,7 +218,7 @@ async function stopModel(): Promise<void> {
           setTimeout(() => reject(new Error('Process exit timeout')), 3000),
         ),
       ]);
-    } catch (error) {
+    } catch {
       aiProcess.kill();
     }
 
