@@ -47,7 +47,7 @@ You can now use this module in any renderer. By default, `@electron/llm` auto-in
 ```
 // First, load the model
 await window.electronAi.create({
-  modelPath: "/full/path/to/model.gguf"
+  modelAlias: "my-model"
 })
 
 // Then, talk to it
