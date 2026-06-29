@@ -1,4 +1,4 @@
-import type { ChatHistoryItem, LlamaChatSession, LlamaModel } from 'node-llama-cpp' with {
+import type { ChatHistoryItem, Llama, LlamaChatSession, LlamaModel } from 'node-llama-cpp' with {
   'resolution-mode': 'import',
 };
 import {
@@ -38,6 +38,7 @@ export class LanguageModel {
   private initialPrompts?: LanguageModelPrompt[];
   private context?: any;
   private session?: LlamaChatSession;
+  private llama?: Llama;
 
   private static readonly paramsData: LanguageModelParams = {
     defaultTopK: 10,
@@ -51,6 +52,7 @@ export class LanguageModel {
     model: LlamaModel,
     context: any,
     session: LlamaChatSession,
+    llama: Llama,
   ) {
     this.topK = options.topK ?? 10;
     this.temperature = options.temperature ?? 0.7;
@@ -58,6 +60,7 @@ export class LanguageModel {
     this.initialPrompts = options.initialPrompts;
     this.context = context;
     this.session = session;
+    this.llama = llama;
   }
 
   static async create(options: InternalLanguageModelCreateOptions): Promise<LanguageModel> {
@@ -79,7 +82,7 @@ export class LanguageModel {
       data: 'Model loaded successfully.',
     });
 
-    return new LanguageModel(options, model, context, session);
+    return new LanguageModel(options, model, context, session, llama);
   }
 
   static async availability(): Promise<AIAvailability> {
@@ -102,6 +105,16 @@ export class LanguageModel {
 
   static async params(): Promise<LanguageModelParams | null> {
     return Promise.resolve(LanguageModel.paramsData);
+  }
+
+  private async buildGrammar(responseJSONSchema?: object) {
+    if (!responseJSONSchema || !this.llama) {
+      return undefined;
+    }
+
+    return this.llama.createGrammarForJsonSchema(
+      responseJSONSchema as Parameters<Llama['createGrammarForJsonSchema']>[0],
+    );
   }
 
   private parseContent(content: LanguageModelPromptContent): string {
@@ -131,11 +144,14 @@ export class LanguageModel {
 
     const processedInput = prompts.map((p) => this.parseContent(p.content)).join('\n');
 
+    const grammar = await this.buildGrammar(options?.responseJSONSchema);
+
     const response = await this.session.prompt(processedInput, {
       temperature: this.temperature,
       signal: options?.signal,
       stopOnAbortSignal: true,
       topK: this.topK,
+      grammar,
     });
 
     return response;
@@ -163,11 +179,14 @@ export class LanguageModel {
 
     return new ReadableStream({
       start: async (controller) => {
+        const grammar = await this.buildGrammar(options?.responseJSONSchema);
+
         await this.session!.prompt(processedInput, {
           temperature: this.temperature,
           signal: options?.signal,
           stopOnAbortSignal: true,
           topK: this.topK,
+          grammar,
 
           onTextChunk: (chunk: string) => {
             controller.enqueue(chunk);
