@@ -75,7 +75,7 @@
     "@electron/rebuild": "^4.0.4",
     "@tsconfig/node22": "^22.0.0",
     "@vitest/coverage-v8": "^4.0.18",
-    "electron": "^39.8.4",
+    "electron": "^41.10.6",
     "husky": "^9.1.7",
     "lint-staged": "^17.4.1",
     "oxfmt": "^0.44.0",
