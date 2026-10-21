@@ -18,7 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         node-version:
-          - '20.19'
+          - '22.x'
+          - '24.x'
         os:
           - macos-latest
           - ubuntu-latest
@@ -33,6 +34,7 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '${{ matrix.node-version }}'
+          check-latest: true
           cache: 'yarn'
       - name: Install dependencies
         run: yarn install --immutable
